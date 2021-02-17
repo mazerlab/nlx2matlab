@@ -1,0 +1,5 @@
+These are a minimal set of tools required to read neuralynx datafiles
+on linux/osx -- derrived from Ueli Rutishauser's unsupported port of
+the neuralynx toolbox. This is V3 from December 2015. Neuralynx (as of
+2021-02-17 is up to version 6.0 for Windows).
+
