@@ -1,4 +1,4 @@
-function nlx_show(x)
+function nlx_show(x, args)
 %function nlx_show(x)
 %
 % generic display function for nlx data structures
@@ -10,7 +10,11 @@ end
 
 switch x.type
   case 'csc'
-    plot(x.ts, x.v);
+    if exist('args', 'var')
+      plot(x.ts(args), x.v(args));
+    else
+      plot(x.ts, x.v);
+    end
     axis tight
     xlabel('usec');
     ylabel('uv');
