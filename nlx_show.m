@@ -14,6 +14,10 @@ for n = 1:length(o)
   if ~isfield(x, 'type')
     error('not a known nlx data struct');
   end
+  
+  src = strsplit(x.src, '/');
+  src = ['...' strjoin(src(end-2:end),'/')];
+  src = strrep(src, '_', '\_');
 
   switch x.type
     case 'csc'
@@ -28,8 +32,7 @@ for n = 1:length(o)
       ylabel('uv');
       hold off
       
-      title(strrep(x.src, '_', '\_'));
-      
+      title(src);
     
     case 'snips'
       rng = 5 * nanstd(x.v(:));
@@ -61,7 +64,7 @@ for n = 1:length(o)
       end
       ylabel('uvolts');
       xlabel('usec');
-      title('all');
+      title(sprintf('average; n=%d', length(x.ts)));
       hold off
 
       % plot histogram of ISIs
@@ -72,16 +75,20 @@ for n = 1:length(o)
       subplot(2,2,2);
       hold on
       isis = [NaN diff(x.ts/1000)];
-      [n, edges] = histcounts(isis, 0:.25:max(isis));
-      edges = (edges(2:end)+edges(1:end-1)) / 2;
-      n = 100 .* n ./ sum(n);
-      yyaxis left
-      set(bar(edges(edges<20), n(edges<20)), 'FaceColor', [0.5 0.5 0.7]);
-      ylabel('%');
-      yyaxis right
-      plot(edges(edges<20), cumsum(n(edges<20)), 'r-');
-      ylabel('cummulative %');
-      xlabel('ISI ms');
+      if length(isis) < 2
+        cla; textbox('no data', 0);
+      else
+        [n, edges] = histcounts(isis, 0:.25:max(isis));
+        edges = (edges(2:end)+edges(1:end-1)) / 2;
+        n = 100 .* n ./ sum(n);
+        yyaxis left
+        set(bar(edges(edges<20), n(edges<20)), 'FaceColor', [0.5 0.5 0.7]);
+        ylabel('%');
+        yyaxis right
+        plot(edges(edges<20), cumsum(n(edges<20)), 'r-');
+        ylabel('cummulative %');
+        xlabel('ISI ms');
+      end
       hold off
 
       % plot waveforms for short (<2ms) ISI spikes - second
@@ -99,10 +106,11 @@ for n = 1:length(o)
       end
       ylabel('uvolts');
       xlabel('usec');
-      title(sprintf('shortisi %.2f%%', 100*length(ix)/length(isis)));
+      title(sprintf('shortisi (<2ms) %.2f%%', 100*length(ix)/length(isis)));
       hold off
       
-      suptitle(strrep(x.src, '_', '\_'));
+      suptitle(src);
+
       
     case 'events'
       error('can''t plot events');

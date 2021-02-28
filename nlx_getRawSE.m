@@ -42,9 +42,15 @@ else
   ModeArray = range;
 end
 
-[TimeStamps, ScNumbers, CellNumbers, Params, DataPoints, header] = ...
-    Nlx2MatSpike_v3(filename, FieldSelection, ExtractHeader, ...
-                    ExtractMode, ModeArray);
+try
+  [TimeStamps, ScNumbers, CellNumbers, Params, DataPoints, header] = ...
+      Nlx2MatSpike_v3(filename, FieldSelection, ExtractHeader, ...
+                      ExtractMode, ModeArray);
+catch
+  % probably empty datafile
+  snips = [];
+  return
+end
 
 snips.type = 'snips';
 snips.header = header;

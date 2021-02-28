@@ -42,9 +42,14 @@ else
   ModeArray = range;
 end
 
-[timestamps, samplefreqs, samples, header] = ...
-    Nlx2MatCSC_v3(filename, FieldSelection,...
-                  ExtractHeader, ExtractMode, ModeArray);
+try
+  [timestamps, samplefreqs, samples, header] = ...
+      Nlx2MatCSC_v3(filename, FieldSelection,...
+                    ExtractHeader, ExtractMode, ModeArray);
+catch
+  csc = [];
+  return
+end
 
 
 csc.type = 'csc';

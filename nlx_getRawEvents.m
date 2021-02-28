@@ -51,8 +51,13 @@ end
 %    ts, ids, ttls, extra, strs, header
 %  with anything not requested skipped.
 
-[timestamps, ev_ids, ttls, extras, ev_strs, header] = ...
-    Nlx2MatEV_v3(filename, FieldSelection, ExtractHeader, ExtractMode);
+try
+  [timestamps, ev_ids, ttls, extras, ev_strs, header] = ...
+      Nlx2MatEV_v3(filename, FieldSelection, ExtractHeader, ExtractMode);
+catch
+  events = [];
+  return
+end
 
 
 events.type = 'events';
