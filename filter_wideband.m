@@ -11,8 +11,20 @@ function [lfp, spk, wideband] = filter_wideband(ts, v, want)
 %
 % [2021-02-25]  this is ripped out of `tdtgetraw.m`
 %
+% [2021-02-27] slow!!
+%   - filter is much faster than filtfilt, but introduces a signficant (12ms) lag..
+%   - the lag with filter is basically N/2/fs, which is 12.8ms at 32000 for the hp filter
+%   - is it save to just shift??
+%
 
-persistent n60 lp hp
+persistent first_time n60 lp hp
+
+% If `use_filter`, then just use the faster filter() function and shift the
+% output back in time by the group delay to compensate for phase shifts.
+% This is much faster than filtfilt() and I think basically ok for real
+% signals and the simple filters used here:
+use_filter = 1;
+
 
 notchfreq = 60;
 lfpcut = 200;
@@ -32,7 +44,9 @@ if isempty(n60)
                   getenv('HOME'), notchfreq, fs);
   if exist(cfile, 'file')
     load(cfile);
-    fprintf('[restored notch filter (fs=%.0f)]\n', fs);
+    if isempty(first_time)
+      fprintf('[restored notch filter (fs=%.0f)]\n', fs);
+    end
   else
     fprintf('[making notch filter (fs=%.0f)', fs);
     % Npoles NotchFreq Qual
@@ -47,7 +61,9 @@ if isempty(lp) && any(want=='l')
                   getenv('HOME'), lfpcut, fs);
   if exist(cfile, 'file')
     load(cfile);
-    fprintf('[restored lfpcut filter (fs=%.0f)]\n', fs);
+    if isempty(first_time)
+      fprintf('[restored lfpcut filter (fs=%.0f)]\n', fs);
+    end
   else
     fprintf('[making lfp filter (fs=%.0f)', fs);
     % Fpass Fstop Apass Astop
@@ -62,7 +78,9 @@ if isempty(hp) && any(want=='s')
                   getenv('HOME'), lfpcut, spikecut, fs);
   if exist(cfile, 'file')
     load(cfile);
-    fprintf('[restored spike filter (fs=%.0f)]\n', fs);
+    if isempty(first_time)
+      fprintf('[restored spike filter (fs=%.0f)]\n', fs);
+    end
   else
     fprintf('[making spike filter (fs=%.0f)', fs);
     % default for design is an equiripple filter, which takes
@@ -79,6 +97,7 @@ if isempty(hp) && any(want=='s')
     save(cfile, 'hp');
   end
 end
+first_time = 'no';
 
 d = [ts; v];
 
@@ -93,20 +112,30 @@ if any(want == 'w')
 end
 
 if any(want == 's')
-  spk = [d(1,:); filtfilt(hp.Numerator, 1, d(2,:))];
+  if ~use_filter
+    spk = [d(1,:); filtfilt(hp.Numerator, 1, double(d(2,:)))];
+  else
+    lag = length(hp.Numerator) / 2;
+    x = filter(hp.Numerator, 1, double(d(2,:)));
+    x = [x(1,lag:end) zeros([1 lag-1])];
+    spk = [d(1,:); x];
+  end
 end
 
 if any(want == 'l')
   % low pass filter and then manually decimate -- warning, this
   % make mean the time values end short..
-  d(2,:) = filtfilt(lp.Numerator, 1, d(2,:));
+  if ~use_filter
+    d(2,:) = filtfilt(lp.Numerator, 1, double(d(2,:)));
+  else
+    lag = length(lp.Numerator) / 2;
+    x = filter(lp.Numerator, 1, double(d(2,:)));
+    x = [x(1,lag:end) zeros([1 lag-1])];
+    d(2,:) = x;
+  end
   while (fs / 2) > (2*lfpcut)
     d = d(:, 1:2:end);
     fs = fs / 2;
   end
   lfp = d;
 end
-
-
-
-
