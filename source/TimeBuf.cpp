@@ -278,7 +278,8 @@ ierr TimeBuf::GetRec(void** lpRec, unsigned int AtPos)
 	}
 
 	if (NumRecsInFile == 0) { 
-		Amb("Empty File.  NumRecs = 0.");
+	        //JM: this happens when you open short/empty file
+	        //JM: Amb("Empty File.  NumRecs = 0.");
 		//LeaveCriticalSection(&ThreadSafe);
 		return(NLX_RANGE); 
 	}
