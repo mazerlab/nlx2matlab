@@ -60,20 +60,32 @@ csc.src = filename;
 csc.xx_isContinous = length(unique(diff(timestamps))) == 1;
 
 % generate continue vector of timestamps in **MICROSECONDS**
-csc.ts = zeros([1 length(timestamps)*512]);
-ix = 1;
-for n = 1:length(timestamps)
-  for k = (1:512)-1
-    t = timestamps(n) + (k / csc.fs * 1e6);
-    csc.ts(ix) = t;
-    ix = ix + 1;
+if 1
+  % fast
+  t = (0:511) / csc.fs * 1e6;
+  %t = 0:9;
+  %timestamps = [0 100 110];
+  x = repmat(t, [size(timestamps,2) 1]);
+  y = repmat(timestamps, [size(t,2) 1])';
+  xy=x+y; xy = xy';
+  csc.ts = xy(:)';
+else
+  % slow version
+  csc.ts = zeros([1 length(timestamps)*512]);
+  ix = 1;
+  for n = 1:length(timestamps)
+    for k = (1:512)-1
+      t = timestamps(n) + (k / csc.fs * 1e6);
+      csc.ts(ix) = t;
+      ix = ix + 1;
+    end
   end
 end
 
 % flatten 512samp nks into continuous sig
 csc.v = samples(:)';
 % convert ADC units to actual MICROVOLTS
-csc.v = 1e6 * csc.v * nlx_pfind(csc.header, '-ADBitVolts', 1);
+csc.v = 1e6 .* csc.v .* nlx_pfind(csc.header, '-ADBitVolts', 1);
 
 assert(length(csc.ts) == length(csc.v), ...
        'timestamp vector not same length as sample vector');
