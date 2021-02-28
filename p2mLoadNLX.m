@@ -2,6 +2,7 @@ function nlxdata = p2mLoadNLX(pf, what, chan)
 %function nlxdata = p2mLoadNLX(pf, what, chan)
 %
 % find and load nlx data matching pypefile
+% NOTE: this actually loads the entire datadir that contains the pf
 %
 %INPUT
 %  pf - pypefile
