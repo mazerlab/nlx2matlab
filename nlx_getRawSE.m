@@ -53,7 +53,9 @@ snips.scnumbers = ScNumbers;
 snips.cellnumbers = CellNumbers;
 snips.params = Params;
 snips.fs = nlx_pfind(snips.header, '-SamplingFrequency', 1);
+snips.thresh = nlx_pfind(snips.header, '-ThreshVal', 1);
 snips.v = squeeze(DataPoints);
 snips.v = 1e6 * snips.v * nlx_pfind(snips.header, '-ADBitVolts', 1);
-snips.t = (1e6 .* ((1:size(snips.v,1)) - 1) / snips.fs)';
-
+offset = nlx_pfind(snips.header, '-AlignmentPt', 1);
+snips.t = (1e6 .* ((1:size(snips.v,1)) - offset) ./ snips.fs)';
+snips.src = filename;

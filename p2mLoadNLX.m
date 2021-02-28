@@ -38,6 +38,6 @@ if any(what == 'h')
   nlxdata.csc = nlx_CSChp(nlxdata.csc);
 end
 if any(what == 's')
-  nlxdata.snips = nlx_getRawCSC([dd sprintf('/SE%d.nse', chan)]);
+  nlxdata.snips = nlx_getRawSE([dd sprintf('/SE%d.nse', chan)]);
 end
 

@@ -113,10 +113,12 @@ end
 
 if any(want == 's')
   if ~use_filter
+    % filtfilt requires doubles
     spk = [d(1,:); filtfilt(hp.Numerator, 1, double(d(2,:)))];
   else
+    % filter does not..
     lag = length(hp.Numerator) / 2;
-    x = filter(hp.Numerator, 1, double(d(2,:)));
+    x = filter(hp.Numerator, 1, d(2,:));
     x = [x(1,lag:end) zeros([1 lag-1])];
     spk = [d(1,:); x];
   end
@@ -126,10 +128,12 @@ if any(want == 'l')
   % low pass filter and then manually decimate -- warning, this
   % make mean the time values end short..
   if ~use_filter
+    % filtfilt requires doubles
     d(2,:) = filtfilt(lp.Numerator, 1, double(d(2,:)));
   else
+    % filter does not..
     lag = length(lp.Numerator) / 2;
-    x = filter(lp.Numerator, 1, double(d(2,:)));
+    x = filter(lp.Numerator, 1, d(2,:));
     x = [x(1,lag:end) zeros([1 lag-1])];
     d(2,:) = x;
   end

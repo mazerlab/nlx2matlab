@@ -5,9 +5,8 @@ function nlx_show(o, args)
 %
 
 if length(o) == 1
-  o = {o};
-else
   clf;
+  o = {o};
 end
 
 for n = 1:length(o)
@@ -28,23 +27,82 @@ for n = 1:length(o)
       xlabel('usec');
       ylabel('uv');
       hold off
+      
+      title(strrep(x.src, '_', '\_'));
+      
     
     case 'snips'
-      subplot(2,1,1);
-      hold on
-      % plot 1000 random snips
-      r = randperm(size(x.v,2));
-      plot(x.t, x.v(:, r(1:1000)));
-      ylabel('uvolts');
-      xlabel('usec');
+      rng = 5 * nanstd(x.v(:));
       
-      subplot(2,1,2);
+      % plot 1000 random snips
+      subplot(2,2,1);
       hold on
-      plot(x.t, mean(x.v, 2));
-      eshade(x.t, mean(x.v, 2), std(x.v, [], 2));
+      r = randperm(size(x.v,2));
+      plot(x.t, x.v(:, r(1:min(1000, size(x.v,2)))));
+      yrange(-rng,rng);
       ylabel('uvolts');
       xlabel('usec');
+      vline(0);
+      if isfield(x, 'thresh')
+        hline(x.thresh, 'LineStyle', '-');
+      end
       hold off
+
+      % plot average spike
+      subplot(2,2,3);
+      hold on
+      plot(x.t, nanmean(x.v, 2));
+      plot(x.t, nanmean(x.v, 2), 'r.');
+      eshade(x.t, nanmean(x.v, 2), nanstd(x.v, [], 2));
+      yrange(-rng,rng);
+      vline(0, 'LineStyle', '-');
+      if isfield(x, 'thresh')
+        hline(x.thresh, 'LineStyle', '-');
+      end
+      ylabel('uvolts');
+      xlabel('usec');
+      title('all');
+      hold off
+
+      % plot histogram of ISIs
+      %
+      % Note: this is potentially misleading -- the NLX spike
+      %   detection algorithm has a hard refractory period
+      %   build in: "-SpikeRetriggerTime 750"
+      subplot(2,2,2);
+      hold on
+      isis = [NaN diff(x.ts/1000)];
+      [n, edges] = histcounts(isis, 0:.25:max(isis));
+      edges = (edges(2:end)+edges(1:end-1)) / 2;
+      n = 100 .* n ./ sum(n);
+      yyaxis left
+      set(bar(edges(edges<20), n(edges<20)), 'FaceColor', [0.5 0.5 0.7]);
+      ylabel('%');
+      yyaxis right
+      plot(edges(edges<20), cumsum(n(edges<20)), 'r-');
+      ylabel('cummulative %');
+      xlabel('ISI ms');
+      hold off
+
+      % plot waveforms for short (<2ms) ISI spikes - second
+      % spike in doublet
+      subplot(2,2,4);
+      hold on
+      ix = find(isis < 2);
+      plot(x.t, nanmean(x.v(:,ix), 2));
+      plot(x.t, nanmean(x.v(:,ix), 2), 'r.');
+      eshade(x.t, nanmean(x.v(:,ix), 2), nanstd(x.v(:,ix), [], 2));
+      yrange(-rng,rng);
+      vline(0, 'LineStyle', '-');
+      if ~isnan(x.thresh)
+        hline(x.thresh, 'LineStyle', '-');
+      end
+      ylabel('uvolts');
+      xlabel('usec');
+      title(sprintf('shortisi %.2f%%', 100*length(ix)/length(isis)));
+      hold off
+      
+      suptitle(strrep(x.src, '_', '\_'));
       
     case 'events'
       error('can''t plot events');

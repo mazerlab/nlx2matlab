@@ -62,3 +62,5 @@ events.ttls = ttls';
 events.strs = ev_strs;
 events.ids = ev_ids;
 events.extras = extras;
+events.src = filename;
+

@@ -41,7 +41,6 @@ else
   ExtractMode = 4;                      % extract between specified timestamps
   ModeArray = range;
 end
-  
 
 [timestamps, samplefreqs, samples, header] = ...
     Nlx2MatCSC_v3(filename, FieldSelection,...
@@ -86,6 +85,7 @@ end
 csc.v = samples(:)';
 % convert ADC units to actual MICROVOLTS
 csc.v = 1e6 .* csc.v .* nlx_pfind(csc.header, '-ADBitVolts', 1);
+
 
 assert(length(csc.ts) == length(csc.v), ...
        'timestamp vector not same length as sample vector');
