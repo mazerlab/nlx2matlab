@@ -30,6 +30,7 @@ for n = 1:length(o)
       axis tight
       xlabel('usec');
       ylabel('uv');
+      grid on;
       hold off
       
       title(src);
@@ -45,10 +46,11 @@ for n = 1:length(o)
       yrange(-rng,rng);
       ylabel('uvolts');
       xlabel('usec');
-      vline(0);
+      vline(0, 'LineStyle', '-');
       if isfield(x, 'thresh')
         hline(x.thresh, 'LineStyle', '-');
       end
+      grid on;
       hold off
 
       % plot average spike
@@ -65,6 +67,7 @@ for n = 1:length(o)
       ylabel('uvolts');
       xlabel('usec');
       title(sprintf('average; n=%d', length(x.ts)));
+      grid on;
       hold off
 
       % plot histogram of ISIs
@@ -107,6 +110,7 @@ for n = 1:length(o)
       ylabel('uvolts');
       xlabel('usec');
       title(sprintf('shortisi (<2ms) %.2f%%', 100*length(ix)/length(isis)));
+      grid on;
       hold off
       
       suptitle(src);

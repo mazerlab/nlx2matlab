@@ -1,4 +1,4 @@
-function snips = csc_findsnips(csc, nsig)
+function snips = csc_findsnips(csc, th, sig)
 
 PRE=8;
 POST=32-8-1;
@@ -6,7 +6,13 @@ POST=32-8-1;
 t = csc.ts;
 v = csc.v;
 
-thresh = nsig * std(v);
+if sig
+  % n * sigma
+  thresh = th * std(v);
+else
+  % actual uvolts
+  thresh = th;
+end
 
 if thresh > 0
   ix = find(diff(v > thresh) > 0);
