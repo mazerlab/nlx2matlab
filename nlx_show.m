@@ -81,7 +81,7 @@ for n = 1:length(o)
       if length(isis) < 2
         cla; textbox('no data', 0);
       else
-        [n, edges] = histcounts(isis, 0:.25:max(isis));
+        [n, edges] = histcounts(isis, 0:1:max(isis));
         edges = (edges(2:end)+edges(1:end-1)) / 2;
         n = 100 .* n ./ sum(n);
         yyaxis left
@@ -113,8 +113,11 @@ for n = 1:length(o)
       grid on;
       hold off
       
-      suptitle(src);
-
+      if x.cliprisk
+        boxtitle([src ' CLIPPED']);
+      else
+        boxtitle(src);
+      end
       
     case 'events'
       error('can''t plot events');

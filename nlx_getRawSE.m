@@ -65,3 +65,17 @@ snips.v = 1e6 * snips.v * nlx_pfind(snips.header, '-ADBitVolts', 1);
 offset = nlx_pfind(snips.header, '-AlignmentPt', 1);
 snips.t = (1e6 .* ((1:size(snips.v,1)) - offset) ./ snips.fs)';
 snips.src = filename;
+snips.features = 'sx';
+snips.cliprisk = 0;
+
+
+% find any snips that exceed clipping threshold (95% of input range)
+r = nlx_pfind(snips.header, '-InputRange', 1);
+ix = find(any(abs(snips.v) > (0.95*r)));
+fclip = length(ix)/size(snips.v,2);
+if fclip > 0.05
+  e = strsplit(nlx_pfind(snips.header, '-AcqEntName'));
+  fprintf('%s: %.0f%% snips at clip risk\n', e{2}, 100*fclip);
+  snips.cliprisk = 1;
+end
+
