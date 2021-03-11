@@ -36,13 +36,13 @@ for n = 1:length(o)
       title(src);
     
     case 'snips'
-      rng = 5 * nanstd(x.v(:));
-      
       % plot 1000 random snips
       subplot(2,2,1);
       hold on
       r = randperm(size(x.v,2));
       plot(x.t, x.v(:, r(1:min(1000, size(x.v,2)))));
+      ax = axis;
+      rng = max(ax(1), ax(4));
       yrange(-rng,rng);
       ylabel('uvolts');
       xlabel('usec');

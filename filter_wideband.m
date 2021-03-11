@@ -27,11 +27,11 @@ use_filter = 1;
 
 
 notchfreq = 60;
-%lfpcut = 200;
-%spikecut = 5000;
+lfpcut = 200;
+spikecut = 5000;
 % [2021-03-01] this matches current settings on SX box
-lfpcut = 400;
-spikecut = 8000;
+%lfpcut = 400;
+%spikecut = 8000;
 
 if ~exist('want', 'var')
   % l = lfp stream (lowpass)

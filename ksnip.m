@@ -70,6 +70,10 @@ hold off
 xlabel('um');
 ylabel('uvolt');
 title('waveforms');
+hline(0, 'LineStyle', '-');
+sig = std(snips.v(:));
+hline(-3*sig, 'LineStyle', ':');
+hline(3*sig, 'LineStyle', ':');
 legend(leg, 'location', 'bestoutside');
 
 subplot(3, 3, 6);

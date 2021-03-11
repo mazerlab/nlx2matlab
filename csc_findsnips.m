@@ -41,7 +41,8 @@ snips.cellnumbers = [];
 snips.params = [];
 snips.fs = csc.fs;
 snips.v = s';
-snips.t = 1e6 .* x' ./ csc.fs;                  % zero in middle (se is 0 at start)
+snips.t = 1e6 .* x' ./ csc.fs;          % zero in middle (se is 0 at start)
 
 snips.thresh = thresh;
 
+snips.cliprisk = 0;                     % this needs to be fixed!
