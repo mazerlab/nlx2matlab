@@ -1,9 +1,11 @@
-function ksnip(snips, nc)
+function [snips, clusterplots] = ksnip(snips, nc)
 %function ksnip(snips, nc)
 %
 % Simple k-means clustering of snips based on hardware-extract features
 % (from the CheetahSX box).
 %
+% currently this just DISPLAYs the k-means results -- doesn't actually
+% 
 
 if isempty(snips.params)
   error('missing snip/SE params');
@@ -14,37 +16,50 @@ np = size(snips.params,1);
 np = 4;
 
 
+% save state of random number generator for reproducibility
+rs = rng; rng(1);
 idx = kmeans(snips.params(1:np,:)', nc);
-cmap = lines(nc);
+rng(rs);
+
+% store sort kmeans results back in snip
+snips.sortcode = char('a' + idx - 1)';
 
 % select data random subset
 % this may not be a good idea - if one class is much more frequent
 % than the others, the rare class will get obscured..
 MAXSCATTER=1000;
-ix = randperm(size(snips.params,2));
-ix = ix(1:min(size(snips.params,2),MAXSCATTER));
+ix = rdraw(MAXSCATTER, 1:size(snips.params,2));
 p = snips.params(:,ix);
-idx = idx(ix);
+idx2 = idx(ix);
 
 clf;
-pn = 0;
+
+% feature plots
+row = 0; col = 0;
+cmap = lines(nc);
 for n = 1:np
   for k = 1:np
-    pn = pn + 1;
     if k <= n
       if k ~= n
-        subplot(np, np, pn);
-        scatter(p(n,:), p(k,:), 2, cmap(idx,:), '.');
-        axis tight;
-        axis off;
-        axis equal;
+        subplot(np, 2*np, 1+(row*2*np)+col);
+        col = col + 1;
+
+        scatter(p(n,:), p(k,:), 2, cmap(idx2,:), '.');
+        %axis tight;
+        %axis equal;
+        set(gca, 'YTickLabel', {},  'XTickLabel', {}, ...
+                 'YTick', [],  'XTick', []);
+        box on;
       end
     end
   end
+  row = row + 1;
+  col = 0;
 end
 
+% waveform plots
 cmap = [0 0 0; cmap];
-subplot(3, 3, 3);
+subplot(3, 3, 2);
 leg = {};
 for n = 0:nc
   if n == 0
@@ -76,7 +91,8 @@ hline(-3*sig, 'LineStyle', ':');
 hline(3*sig, 'LineStyle', ':');
 legend(leg, 'location', 'bestoutside');
 
-subplot(3, 3, 6);
+% ISI histograms
+subplot(3, 3, 5);
 for n = 0:nc
   if n == 0
     ix = 1:length(idx);
@@ -100,9 +116,36 @@ ylabel('%');
 title('isi');
 legend(leg, 'location', 'bestoutside');
 
+% bycluster waveform plots
+
+a = [];
+for n = 1:nc
+  subplot(nc, 3, 3*n);
+  ix = rdraw(1000, find(idx == n));
+  plot(snips.t, snips.v(:, ix), '-', 'Color', [cmap(n+1,:) 0.2]);
+  if length(snips.q) >= n
+    ylabel(sprintf('%d %s', n, snips.q{n}));
+  else
+    ylabel(n);
+  end
+  a = [a; axis];
+end
+% set all to same yrange for comparison
+if nc > 1
+  a = max(a(:, 3:4));
+else
+  a = a(3:4);
+end
+for n = 1:nc
+  subplot(nc, 3, 3*n);
+  yrange(a(1), a(2));
+  if nargout > 1
+    clusterplots(n) = cla;
+  end
+end
+
 src = strsplit(snips.src, '/');
 src = ['...' strjoin(src(end-2:end),'/')];
 src = strrep(src, '_', '\_');
 boxtitle(sprintf('%s [features:%s]', src, snips.features));
-
 

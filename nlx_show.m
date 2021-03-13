@@ -39,16 +39,17 @@ for n = 1:length(o)
       % plot 1000 random snips
       subplot(2,2,1);
       hold on
-      r = randperm(size(x.v,2));
-      plot(x.t, x.v(:, r(1:min(1000, size(x.v,2)))));
+      r = rdraw(1000, 1:size(x.v,2));
+      plot(x.t, x.v(:, r), 'Color', [0 0 0 .1]);
       ax = axis;
-      rng = max(ax(1), ax(4));
+      axis tight;
+      rng = max(abs(ax(3:4)));
       yrange(-rng,rng);
       ylabel('uvolts');
       xlabel('usec');
       vline(0, 'LineStyle', '-');
       if isfield(x, 'thresh')
-        hline(x.thresh, 'LineStyle', '-');
+        hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
       grid on;
       hold off
@@ -62,7 +63,7 @@ for n = 1:length(o)
       yrange(-rng,rng);
       vline(0, 'LineStyle', '-');
       if isfield(x, 'thresh')
-        hline(x.thresh, 'LineStyle', '-');
+        hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
       ylabel('uvolts');
       xlabel('usec');
@@ -75,7 +76,7 @@ for n = 1:length(o)
       % Note: this is potentially misleading -- the NLX spike
       %   detection algorithm has a hard refractory period
       %   build in: "-SpikeRetriggerTime 750"
-      subplot(2,2,2);
+      subplot(2,4,3);
       hold on
       isis = [NaN diff(x.ts/1000)];
       if length(isis) < 2
@@ -85,7 +86,8 @@ for n = 1:length(o)
         edges = (edges(2:end)+edges(1:end-1)) / 2;
         n = 100 .* n ./ sum(n);
         yyaxis left
-        set(bar(edges(edges<20), n(edges<20)), 'FaceColor', [0.5 0.5 0.7]);
+        %set(bar(edges(edges<20), n(edges<20)), 'FaceColor', [0.5 0.5 0.7]);
+        plot(edges(edges<20), n(edges<20), 'b-');
         ylabel('%');
         yyaxis right
         plot(edges(edges<20), cumsum(n(edges<20)), 'r-');
@@ -93,6 +95,11 @@ for n = 1:length(o)
         xlabel('ISI ms');
       end
       hold off
+      
+      subplot(2,4,4);
+      
+      hist(max(x.v));
+      xlabel('peak V');
 
       % plot waveforms for short (<2ms) ISI spikes - second
       % spike in doublet
@@ -105,7 +112,7 @@ for n = 1:length(o)
       yrange(-rng,rng);
       vline(0, 'LineStyle', '-');
       if ~isnan(x.thresh)
-        hline(x.thresh, 'LineStyle', '-');
+        hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
       ylabel('uvolts');
       xlabel('usec');

@@ -20,3 +20,4 @@ auto_np = max(find(cumsum(latent./sum(latent)) < 0.9));
 fprintf('pcasnip: recommend <= %d PCs\n', auto_np);
 
 snips.features = 'pca';
+

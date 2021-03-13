@@ -27,8 +27,8 @@ if ~exist('what', 'var')
 end
 
 nlxdata.events = nlx_getRawEvents([dd '/Events.nev']);
-nlx.csc = [];
-nlx.snips = [];
+nlxdata.csc = [];
+nlxdata.snips = [];
 
 if any(what == 'c')
   nlxdata.csc = nlx_getRawCSC([dd sprintf('/CSC%d.ncs', chan)]);
