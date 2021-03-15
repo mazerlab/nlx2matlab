@@ -47,7 +47,7 @@ for n = 1:length(o)
       yrange(-rng,rng);
       ylabel('uvolts');
       xlabel('usec');
-      vline(0, 'LineStyle', '-');
+      vline(0, 'LineStyle', '-', 'Color', 'b');
       if isfield(x, 'thresh')
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
@@ -61,7 +61,7 @@ for n = 1:length(o)
       plot(x.t, nanmean(x.v, 2), 'r.');
       eshade(x.t, nanmean(x.v, 2), nanstd(x.v, [], 2));
       yrange(-rng,rng);
-      vline(0, 'LineStyle', '-');
+      vline(0, 'LineStyle', '-', 'Color', 'b');
       if isfield(x, 'thresh')
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
@@ -110,7 +110,7 @@ for n = 1:length(o)
       plot(x.t, nanmean(x.v(:,ix), 2), 'r.');
       eshade(x.t, nanmean(x.v(:,ix), 2), nanstd(x.v(:,ix), [], 2));
       yrange(-rng,rng);
-      vline(0, 'LineStyle', '-');
+      vline(0, 'LineStyle', '-', 'Color', 'b');
       if ~isnan(x.thresh)
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end

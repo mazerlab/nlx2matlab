@@ -18,11 +18,11 @@ np = 4;
 
 % save state of random number generator for reproducibility
 rs = rng; rng(1);
-idx = kmeans(snips.params(1:np,:)', nc);
+idx = kmeans(snips.params(1:np,:)', nc, 'replicates', 10);
 rng(rs);
 
 % store sort kmeans results back in snip
-snips.sortcode = char('a' + idx - 1)';
+snips.cellnumbers = idx';
 
 % select data random subset
 % this may not be a good idea - if one class is much more frequent
@@ -123,11 +123,7 @@ for n = 1:nc
   subplot(nc, 3, 3*n);
   ix = rdraw(1000, find(idx == n));
   plot(snips.t, snips.v(:, ix), '-', 'Color', [cmap(n+1,:) 0.2]);
-  if length(snips.q) >= n
-    ylabel(sprintf('%d %s', n, snips.q{n}));
-  else
-    ylabel(n);
-  end
+  ylabel(n);
   a = [a; axis];
 end
 % set all to same yrange for comparison
@@ -139,9 +135,6 @@ end
 for n = 1:nc
   subplot(nc, 3, 3*n);
   yrange(a(1), a(2));
-  if nargout > 1
-    clusterplots(n) = cla;
-  end
 end
 
 src = strsplit(snips.src, '/');

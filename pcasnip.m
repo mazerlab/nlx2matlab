@@ -6,18 +6,22 @@ function snips = pcasnip(snips, np)
 %
 
 if ~exist('np', 'var')
-  np = 4;                               % default for SX box
+  np = 4;
 end
 
 if size(snips.v,2) < np
-  error(sprintf('pcasnip requires >%d examples', np));
+  % if not enough snips, just return snips unchanged
+  warning(sprintf('pcasnip requires >%d examples', np));
+  return
 end
 [pcs, scores, latent] = pca(snips.v');
 snips.params = scores(:,1:np)';
 
 % figure out how many PCs cover 90% of the data
 auto_np = max(find(cumsum(latent./sum(latent)) < 0.9));
-fprintf('pcasnip: recommend <= %d PCs\n', auto_np);
+if np > auto_np
+  warning(sprintf('pcasnip: recommend reducing np (<= %d PCs)\n', auto_np));
+end
 
 snips.features = 'pca';
 
