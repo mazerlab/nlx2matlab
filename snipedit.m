@@ -4,7 +4,7 @@ classdef snipedit < handle
     exper
     pf
     ch
-    fig0, fig1, fig2, fig3
+    figs
     nd
     cscdata
     cscn
@@ -39,25 +39,26 @@ classdef snipedit < handle
       end
 
       n = 100;
-      obj.fig0 = figure(n); clf; n = n + 1;
-      obj.fig1 = figure(n); clf; n = n + 1;
-      obj.fig2 = figure(n); clf; n = n + 1;
-      obj.fig3 = figure(n); clf; n = n + 1;
+      obj.figs{1} = figure(n); clf; n = n + 1; % snip plot
+      obj.figs{2} = figure(n); clf; n = n + 1; % kmeans clusters
+      obj.figs{3} = figure(n); clf; n = n + 1; % message window
+      obj.figs{4} = figure(n); clf; n = n + 1; % menubar
       
-      set(obj.fig0, 'Units', 'normalized', ...
+      set(obj.figs{4}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
           'Position', [0, 1, 0.66, 0.03], ...
           'Toolbar' ,'none', 'Menubar', 'none');
 
       buts = [];
-      labels = { {'keep>', 'comma'}, ...
+      labels = { {'good >', 'comma'}, ...
+		 {'good', 'w'}, ...
 		 {'<', 'p'}, {'>', 'n'}, ...
-		 {'SU', 's'}, {'MU', 'm'}, {'junk', 'x'}, {'Check', 'z'}, ...
+		 {'su', 's'}, {'mu', 'm'}, {'junk', 'j'}, {'unsorted', 'u'}, ...
 		 {'k++', 'equal'}, {'k--', 'hyphen'}, ...
-		 {'pca', 'f'}, {'Quit', 'q'} };
+		 {'pca', 'f'}, {'quit', 'q'} };
 
       for n = 1:length(labels)
-	buts(n) = uicontrol(obj.fig0, 'Style', 'pushbutton', ...
+	buts(n) = uicontrol(obj.figs{4}, 'Style', 'pushbutton', ...
 			    'String', labels{n}{1});
 	if n < 2
 	  pn = get(buts(n), 'Position');
@@ -71,35 +72,27 @@ classdef snipedit < handle
 	set(buts(n), 'Callback', {@obj.dispatch, labels{n}{2}});
       end
 
-      set(obj.fig1, 'Units', 'normalized', ...
+      set(obj.figs{1}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-	  'Position', [0, .58, 0.4, 0.3], ...
+	  'Position', [0, .44, 0.4, 0.43], ...
           'Toolbar' ,'none', 'Menubar', 'none');
       
-      set(obj.fig2, 'Units', 'normalized', ...
+      set(obj.figs{3}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-          'Position', [0, .25, 0.66, 0.3], ...
+          'Position', [0.41, 0.44, 0.25, 0.43], ...
           'Toolbar' ,'none', 'Menubar', 'none');
       
-      set(obj.fig3, 'Units', 'normalized', ...
+      set(obj.figs{2}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-          'Position', [0.41, 0.58, 0.25, 0.3], ...
+          'Position', [0, 0.01, 0.66, 0.4], ...
           'Toolbar' ,'none', 'Menubar', 'none');
-
-      while 1
-	obj.selectchan(obj.ch)
-	if obj.loadchan()
-	  break;
-	end
-	obj.selectchan(obj.ch);
-      end
-      obj.draw();
+      
+      obj.gochan(obj.ch, 1);
       
       obj.busy = 1;
-      set(obj.fig0, 'KeyPressFcn', @obj.dispatch);
-      set(obj.fig1, 'KeyPressFcn', @obj.dispatch);
-      set(obj.fig2, 'KeyPressFcn', @obj.dispatch);
-      set(obj.fig3, 'KeyPressFcn', @obj.dispatch);
+      for n = 1:length(obj.figs)
+	set(obj.figs{n}, 'KeyPressFcn', @obj.dispatch);
+      end
       obj.busy = 0;
     end
 
@@ -134,7 +127,14 @@ classdef snipedit < handle
         nd = obj.cscdata;
         nd.csc = [];
       else
-        nd = p2mLoadNLX(obj.pf, 's', obj.ch);
+	s = obj.rwsnips('load');
+	if ~isempty(s)
+	  fprintf('; loaded mat-cached se for ch#%d\n', obj.ch);
+          nd = p2mLoadNLX(obj.pf, '', obj.ch);
+	  nd.snips = s;
+	else
+          nd = p2mLoadNLX(obj.pf, 's', obj.ch);
+	end
 	if isempty(nd.snips)
 	  %% empty snip file
 	  r = 0;
@@ -167,13 +167,19 @@ classdef snipedit < handle
         r = 0;
       else
 	r = 1;
-
-	if obj.nclust == length(obj.r{obj.ch}.q)
-	  %% no change in number of clusters, keep previous quality evals
-	  nd.snips.q = obj.r{obj.ch}.q;
+	if isfield(nd.snips, 'q')
+	  %% loaded data from se-mat file, already has some info, use it.
+	  obj.thresh = nd.snips.thresh;
+	  obj.nclust = length(nd.snips.q);
 	else
-	  %% changed nclust, reset sort quality evals back 'u'
-	  nd.snips.q = char('u'+0*(1:obj.nclust));
+	  %% fresh look
+	  if obj.nclust == length(obj.r{obj.ch}.q)
+	    %% no change in number of clusters, keep previous quality evals
+	    nd.snips.q = obj.r{obj.ch}.q;
+	  else
+	    %% changed nclust, reset sort quality evals back 'u'
+	    nd.snips.q = char('u'+0*(1:obj.nclust));
+	  end
 	end
 	%% no features params because loaded from csc, force pca
         if ~isfield(nd.snips, 'params') || isempty(nd.snips.params)
@@ -188,15 +194,17 @@ classdef snipedit < handle
     end
     
     function draw(obj)
-      set(0, 'CurrentFigure', obj.fig1);
+      set(0, 'CurrentFigure', obj.figs{1});
       nlx_show(obj.nd.snips);
-      set(0, 'CurrentFigure', obj.fig2);
+      
+      set(0, 'CurrentFigure', obj.figs{2});
       obj.nd.snips = ksnip(obj.nd.snips, obj.nclust);
+
       obj.msg();
     end
     
     function msg(obj, working)
-      set(0, 'CurrentFigure', obj.fig3);
+      set(0, 'CurrentFigure', obj.figs{3});
       if nargin > 1 && ~isempty(working)
         cla; textbox(working, 0); drawnow;
       else
@@ -205,7 +213,7 @@ classdef snipedit < handle
 		      'n/p/Ng: next/prev/jump chan\n' ...
 		      '+/-/Nk: set # clusters\n' ...
 		      '    Nt: set threshold (or up/down arrows)\n' ...
-		      ' Nsmxz: mark kluster SU, MU, garbage, check\n']);
+		      ' Nsmju: mark SU, MU, junk, unsorted/check\n']);
         s = [s sprintf('\n')];
         s = [s sprintf('  exper = %s\n', obj.exper)];
         s = [s sprintf('    pca = %d\n', obj.pca)];
@@ -224,8 +232,17 @@ classdef snipedit < handle
       end
     end
 
-    function snips = rwsnips(obj, do)
-      savefile = sprintf('%s/_se%d.mat', dirname(obj.pf.src), obj.ch);
+    function mkdirhier(obj, d)
+      unix(sprintf('mkdir -p %s', d));
+    end
+    
+    function snips = rwsnips(obj, do, ch)
+      if ~exist('ch', 'var')
+	ch = obj.ch;
+      end
+			
+      savefile = sprintf('%s/sefiles/se%d.mat', dirname(obj.pf.src), ch);
+      obj.mkdirhier(dirname(savefile));
       switch do
 	case 'save'
 	  xx = struct();
@@ -244,7 +261,10 @@ classdef snipedit < handle
     end
 
     function rwqual(obj, do)
-      savefile = sprintf('%s/_%s.snips.mat', dirname(obj.pf.src), obj.exper);
+      savefile = sprintf('%s/sefiles/%s.qual.mat', dirname(obj.pf.src), obj.exper);
+      obj.mkdirhier(dirname(savefile));
+
+      csvfile = sprintf('%s/sefiles/%s.qual.csv', dirname(obj.pf.src), obj.exper);
       
       switch do
 	case 'save'
@@ -253,18 +273,28 @@ classdef snipedit < handle
 	  xx.ch = obj.ch;
 	  save(savefile, 'xx');
 	  fprintf('; wrote to: %s\n', savefile);
+	  fid = fopen(csvfile, 'w');
+	  fprintf(fid, 'ch,thresh,nclust,pca,use_csc,q\n');
+	  for n = 1:obj.NCHAN
+	    fprintf(fid, '%d,%f,%d,%d,%d,"%s"\n', ...
+		    n, obj.r{n}.thresh, obj.r{n}.nclust, ...
+		    obj.r{n}.pca, obj.r{n}.use_csc, obj.r{n}.q);
+	  end
+	  fclose(fid);
+	  fprintf('; wrote to: %s\n', csvfile);
 	case 'load'
 	  try
 	    xx = load(savefile);
 	    obj.r = xx.xx.r;
-	    obj.ch = xx.xx.ch;
+	    obj.ch = xx.xx.ch;	% restore to last channel
 	  catch
 	    %% file doesn't exist -- initialize r and save
 	    fprintf('; missing %s (initializing)\n', savefile);
+	    fid = fopen(csvfile, 'w');
 	    for n = 1:obj.NCHAN
-	      obj.r{n}.q = 'uu';
+	      obj.r{n}.q = 'u';
 	      obj.r{n}.thresh = 0;
-	      obj.r{n}.nclust = 2;
+	      obj.r{n}.nclust = 1;
 	      obj.r{n}.pca = 1;
 	      obj.r{n}.use_csc = 0;
 	    end
@@ -282,15 +312,39 @@ classdef snipedit < handle
     end
 
     function gochan(obj, abs, rel)
-    
+      if isempty(abs)
+	obj.ch = obj.ch + rel;
+      else
+	obj.ch = abs;
+	rel = 1;
+      end
+      
       while 1
-	    obj.selectchan(obj.ch + 1);
-            if obj.loadchan()
-	      break;
-            end
-            fprintf('no snips on ch %d\n', obj.ch);
-          end
-          obj.draw();
+	obj.selectchan(obj.ch);
+        if obj.loadchan()
+	  break;
+        end
+        fprintf('no snips on ch %d\n', obj.ch);
+	obj.ch = obj.ch + rel;
+      end
+      obj.draw();
+    end
+
+    function commit(obj)
+      obj.r{obj.ch}.q = obj.nd.snips.q;
+      obj.r{obj.ch}.thresh = obj.thresh;
+      obj.r{obj.ch}.nclust = obj.nclust;
+      obj.r{obj.ch}.pca = obj.pca;
+      obj.r{obj.ch}.use_csc = obj.use_csc;
+      obj.rwqual('save');
+      obj.rwsnips('save');
+    end
+
+    function closeall(obj)
+      for n = 1:length(obj.figs)
+	close(obj.figs{n});
+      end
+    end
       
 
     function dispatch(obj, src, event, key)
@@ -299,10 +353,12 @@ classdef snipedit < handle
       end
       obj.busy = 1;
 
-      if ~exist('key', 'var')
-	key = event.Key;
-      else
-	key;
+      if strcmp(event.EventName, 'KeyPress')
+	if event.Character < 32
+	  key = event.Key;
+	else
+	  key = event.Character;
+	end
       end
 
       switch key
@@ -310,24 +366,12 @@ classdef snipedit < handle
           obj.pca = ~obj.pca;
           obj.loadchan();
           obj.draw();
-	case {'space', 'n'}
-          while 1
-	    obj.selectchan(obj.ch + 1);
-            if obj.loadchan()
-	      break;
-            end
-            fprintf('no snips on ch %d\n', obj.ch);
-          end
-          obj.draw();
-	case 'p'
-          while 1
-	    obj.selectchan(obj.ch - 1)
-            if obj.loadchan()
-	      break;
-            end
-            fprintf('no snips on ch %d\n', obj.ch);
-          end
-          obj.draw();
+	case {'p', 'leftarrow'}
+	  obj.gochan([], -1);
+	case 'g'
+	  obj.gochan(obj.arg(), 1);
+	case {' ', 'n', 'rightarrow'}
+	  obj.gochan([], 1);
 	case 'r'
           obj.loadchan();
           obj.draw();
@@ -356,27 +400,17 @@ classdef snipedit < handle
             obj.loadchan();
             obj.draw();
           end
-	case 'g'
-	  obj.selectchan(obj.arg());
-          while 1
-            if obj.loadchan()
-              break;
-            end
-            fprintf('no snips on ch %d\n', obj.ch);
-            obj.selectchan(obj.ch + 1);
-          end
-          obj.draw();
 	case 'k'
           obj.nclust = max(1, obj.arg());
 	  obj.nd.snips.q = char('u'+0*(1:obj.nclust));
           obj.msg('clustering');
           obj.draw();
-	case 'equal'
+	case {'add', 'equal'}
           obj.nclust = obj.nclust+1;
 	  obj.nd.snips.q = char('u'+0*(1:obj.nclust));
           obj.msg('clustering');
           obj.draw();
-	case 'hyphen'
+	case {'subtract', 'hyphen'}
           n = max(1, obj.nclust-1);
           if n ~= obj.nclust
             obj.nclust = n;
@@ -385,10 +419,10 @@ classdef snipedit < handle
             obj.draw();
           end
 	case 'q'
-          close(obj.fig0);
-          close(obj.fig1);
-          close(obj.fig2);
-          close(obj.fig3);
+	  obj.commit();
+	  obj.closeall();
+	case 'Q'
+	  obj.closeall();
 	case 'escape'
           obj.arg();
           obj.msg();
@@ -398,26 +432,22 @@ classdef snipedit < handle
 	case 'm'
 	  obj.nd.snips.q(min(obj.nclust, max(1,obj.arg()))) = 'm';
 	  obj.msg();
-	case 'x'
-	  obj.nd.snips.q(min(obj.nclust, max(1,obj.arg()))) = 'g';
+	case 'j'
+	  obj.nd.snips.q(min(obj.nclust, max(1,obj.arg()))) = 'j';
 	  obj.msg();
-	case 'z'
-	  obj.nd.snips.q(min(obj.nclust, max(1,obj.arg()))) = 'c';
+	case 'u'
+	  obj.nd.snips.q(min(obj.nclust, max(1,obj.arg()))) = 'u';
 	  obj.msg();
-	case 'comma'
-	  obj.r{obj.ch}.q = obj.nd.snips.q;
-	  obj.r{obj.ch}.thresh = obj.thresh;
-	  obj.r{obj.ch}.nclust = obj.nclust;
-	  obj.r{obj.ch}.pca = obj.pca;
-	  obj.r{obj.ch}.use_csc = obj.use_csc;
-	  obj.rwqual('save');
-	  obj.rwsnips('save');
-	  obj.showr(obj.ch:obj.ch);
+	case 'w'
+	  obj.commit()
+	case ','
+	  obj.commit()
+	  obj.gochan([], 1);
 	case 'period'
           obj.buf = [obj.buf '.'];
 	otherwise
           if length(key) == 1
-            if key(1) >= '0' || key(1) <= '9'
+            if key >= '0' || key <= '9'
               obj.buf = [obj.buf key];
             else
               obj.buf = '';

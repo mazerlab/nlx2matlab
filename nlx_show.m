@@ -39,7 +39,7 @@ for n = 1:length(o)
       % plot 1000 random snips
       subplot(2,2,1);
       hold on
-      r = rdraw(1000, 1:size(x.v,2));
+      r = rdraw(200, 1:size(x.v,2));
       plot(x.t, x.v(:, r), 'Color', [0 0 0 .1]);
       ax = axis;
       axis tight;
@@ -51,11 +51,12 @@ for n = 1:length(o)
       if isfield(x, 'thresh')
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
+      title('200 rand')
       grid on;
       hold off
 
       % plot average spike
-      subplot(2,2,3);
+      subplot(2,3,4);
       hold on
       plot(x.t, nanmean(x.v, 2));
       plot(x.t, nanmean(x.v, 2), 'r.');
@@ -71,6 +72,24 @@ for n = 1:length(o)
       grid on;
       hold off
 
+      % plot average spike
+      subplot(2,3,5);
+      hold on
+      y = nanmean(x.v, 2);
+      l = find(x.t <= 0);
+      r = find(x.t >= 0);
+      plot(abs(x.t(l)), y(l), 'ro', abs(x.t(r)), y(r), 'k.');
+      yrange(-rng,rng);
+      xrange(-50, max(x.t));
+      vline(0, 'LineStyle', '-', 'Color', 'b');
+      if isfield(x, 'thresh')
+        hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
+      end
+      xlabel('usec');
+      title('waveform sym');
+      grid on;
+      hold off
+      
       % plot histogram of ISIs
       %
       % Note: this is potentially misleading -- the NLX spike
@@ -97,13 +116,12 @@ for n = 1:length(o)
       hold off
       
       subplot(2,4,4);
-      
       hist(max(x.v));
       xlabel('peak V');
 
       % plot waveforms for short (<2ms) ISI spikes - second
       % spike in doublet
-      subplot(2,2,4);
+      subplot(2,3,6);
       hold on
       ix = find(isis < 2);
       plot(x.t, nanmean(x.v(:,ix), 2));
@@ -114,7 +132,6 @@ for n = 1:length(o)
       if ~isnan(x.thresh)
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
-      ylabel('uvolts');
       xlabel('usec');
       title(sprintf('shortisi (<2ms) %.2f%%', 100*length(ix)/length(isis)));
       grid on;

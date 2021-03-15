@@ -121,9 +121,10 @@ legend(leg, 'location', 'bestoutside');
 a = [];
 for n = 1:nc
   subplot(nc, 3, 3*n);
-  ix = rdraw(1000, find(idx == n));
+  ix = rdraw(200, find(idx == n));
   plot(snips.t, snips.v(:, ix), '-', 'Color', [cmap(n+1,:) 0.2]);
   ylabel(n);
+  title('200 rand');
   a = [a; axis];
 end
 % set all to same yrange for comparison
