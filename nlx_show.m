@@ -51,6 +51,9 @@ for n = 1:length(o)
       if isfield(x, 'thresh')
         hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
       end
+      if ~isnan(x.orig_thresh)
+        hline(x.orig_thresh, 'LineStyle', ':', 'Color', 'r');
+      end
       title('200 rand')
       grid on;
       hold off

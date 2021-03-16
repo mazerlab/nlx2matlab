@@ -110,7 +110,10 @@ classdef snipedit < handle
     end
       
     
-    function r = loadchan(obj)
+    function r = loadchan(obj, forceraw)
+      if ~exist('forceraw', 'var')
+	forceraw = 0;
+      end
       obj.msg(sprintf('loading ch%d', obj.ch));
       
       if obj.use_csc
@@ -127,10 +130,18 @@ classdef snipedit < handle
         nd = obj.cscdata;
         nd.csc = [];
       else
-	s = obj.rwsnips('load');
+	if forceraw
+	  s = findrawsnips(obj);
+	  if ~isempty(s)
+	    obj.thresh = 0;
+	    obj.nclust = 1;
+	    s.q = 'u';
+	  end
+	else
+	  s = obj.rwsnips('load');
+	end
 	if ~isempty(s)
 	  fprintf('; loaded mat-cached se for ch#%d\n', obj.ch);
-          nd = p2mLoadNLX(obj.pf, '', obj.ch);
 	  nd.snips = s;
 	else
           nd = p2mLoadNLX(obj.pf, 's', obj.ch);
@@ -145,25 +156,25 @@ classdef snipedit < handle
 
 	%% this allows setting threshold, but will adjust to make
 	%% sure some spikes are found (enough for pca)
+	t0  = find(nd.snips.t == 0);
 	while obj.thresh > 0
-	  ix = find(any(nd.snips.v > obj.thresh));
+	  %% bad - any volt over thresh:
+	  %% ix = find(any(nd.snips.v > obj.thresh));
+	  %% better - only consider voltage at time 0
+	  ix = find(nd.snips.v(t0,:) > obj.thresh);
 	  if length(ix) > 10
-	    %% perhaps should look only at the alignment point?
 	    nd.snips = subsnips(nd.snips, ix);
 	    nd.snips.thresh = obj.thresh;
 	    break;
-	  else
-	    obj.thresh
 	  end
-	  
-	  %% go down in steps of 10uv until 0 - if get to zero, then there were
-	  %% really no snips to start with.
-	  obj.thresh = max(0, obj.thresh - 10);
+	  %% go down in steps of 10uv (limit is 0) - if get to zero, then
+	  %% there were probably no real snips to start with.
+	  obj.thresh = max(0, obj.thresh - 1);
         end
       end
       
       if isempty(nd.snips) || size(nd.snips.v, 2) < 10
-	% no (or almost no snips in datafile)
+	% no (or almost no) snips in datafile (after thresh applied)
         r = 0;
       else
 	r = 1;
@@ -210,6 +221,7 @@ classdef snipedit < handle
       else
         s = sprintf([...
 		      '     f: toggle sx/pca features\n' ...
+		      '     r: reload snip data\n' ...
 		      'n/p/Ng: next/prev/jump chan\n' ...
 		      '+/-/Nk: set # clusters\n' ...
 		      '    Nt: set threshold (or up/down arrows)\n' ...
@@ -231,42 +243,37 @@ classdef snipedit < handle
         cla; textbox(s, 0);
       end
     end
+    
+    function snips = rwsnips(obj, dir)
+      savefile = sprintf('%s/sefiles/se%d.mat', dirname(obj.pf.src), obj.ch);
+      mkdirhier(dirname(savefile));
+      if ~isempty(obj.nd)
+	s = obj.nd.snips;
+      else
+	s = [];
+      end
+      snips = rwsnips(dir, s, savefile);
+    end
 
-    function mkdirhier(obj, d)
-      unix(sprintf('mkdir -p %s', d));
+    function snips = findrawsnips(obj)
+      savefile = sprintf('%s/sefiles/csc-se%d.mat', dirname(obj.pf.src), obj.ch)
+      snips = rwsnips('load', [], savefile);
+      if ~isempty(snips)
+	fprintf('; raw: found csc-se file\n');
+      elseif isempty(snips)
+	nd = p2mLoadNLX(obj.pf, 's', obj.ch);
+	snips = nd.snips;
+	if ~isempty(snips)
+	  fprintf('; raw: found se file\n');
+	end
+      end
     end
     
-    function snips = rwsnips(obj, do, ch)
-      if ~exist('ch', 'var')
-	ch = obj.ch;
-      end
-			
-      savefile = sprintf('%s/sefiles/se%d.mat', dirname(obj.pf.src), ch);
-      obj.mkdirhier(dirname(savefile));
-      switch do
-	case 'save'
-	  xx = struct();
-	  xx.snips = obj.nd.snips;
-	  save(savefile, 'xx');
-	  fprintf('; wrote snips to: %s\n', savefile);
-	  snips = [];
-	case 'load'
-	  try
-	    xx = load(savefile);
-	    snips = xx.xx.snips;
-	  catch
-	    snips = [];
-	  end
-      end
-    end
-
-    function rwqual(obj, do)
+    function rwqual(obj, dir)
       savefile = sprintf('%s/sefiles/%s.qual.mat', dirname(obj.pf.src), obj.exper);
-      obj.mkdirhier(dirname(savefile));
-
       csvfile = sprintf('%s/sefiles/%s.qual.csv', dirname(obj.pf.src), obj.exper);
-      
-      switch do
+      mkdirhier(dirname(savefile));
+      switch dir
 	case 'save'
 	  xx = struct();
 	  xx.r = obj.r;
@@ -373,7 +380,7 @@ classdef snipedit < handle
 	case {' ', 'n', 'rightarrow'}
 	  obj.gochan([], 1);
 	case 'r'
-          obj.loadchan();
+          obj.loadchan(1);
           obj.draw();
 	case 'c'
 	  %% not yet: very, very slow
@@ -393,13 +400,10 @@ classdef snipedit < handle
           obj.loadchan();
           obj.draw();
 	case 't'
-          t = obj.thresh;
-          obj.thresh = obj.arg()
-          obj.msg()
-          if t ~= obj.thresh
-            obj.loadchan();
-            obj.draw();
-          end
+          obj.thresh = obj.arg();
+          obj.msg();
+          obj.loadchan();
+          obj.draw();
 	case 'k'
           obj.nclust = max(1, obj.arg());
 	  obj.nd.snips.q = char('u'+0*(1:obj.nclust));
