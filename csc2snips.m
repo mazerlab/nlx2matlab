@@ -20,10 +20,8 @@ if ~exist('expers', 'var')
   x = cellfun(@(x) basename(x), x, 'uniformoutput', 0);
   expers = {};
   for n = 1:length(x)
-    if ~isempty(x{n})
-      y = strsplit(x{n}, '.');
-      expers{length(expers)+1} = y{1};
-    end
+    y = strsplit(x{n}, '.');
+    expers{length(expers)+1} = y{1};
   end
   % stop as soon as you find a file already exracted
   halt_on_first_dup = 1;
