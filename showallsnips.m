@@ -1,13 +1,33 @@
-function showallsnips(exper, src)
+function showallsnips(exper, src, varargin)
+
+opts.autoscale = 0;                     % scale each plot to max (vs all same)
+opts.meanonly = 0;                      % no traces
+opts.save = 0;
 
 if ~exist('src', 'var')
   src = 'se';
 end
 if strcmp(src, 'all')
-  showallsnips(exper, 'sx');
-  showallsnips(exper, 'csc-se');  
-  showallsnips(exper, 'se');
+  showallsnips(exper, 'sx', varargin{:});
+  showallsnips(exper, 'csc-se', varargin{:});
+  showallsnips(exper, 'se', varargin{:});
   return
+end
+
+n = 1;
+while n < length(varargin)
+  arg = varargin{n};
+  switch arg
+    case 'autoscale'
+      opts.autoscale = 1;
+    case 'meanonly'
+      opts.meanonly = 1;
+    case 'save'
+      opts.save = 1;
+    otherwise
+      error('unknown arg: %s', arg);
+  end
+  n = n + 1;
 end
 
 l = dbfind(exper, 'list');
@@ -35,7 +55,7 @@ for ch = 1:64
       error('src must be: ''all'', ''sx'', ''se'' or ''csc-se''');
   end
   if ~isempty(snips)
-    plotsnips(snips, ch);
+    plotsnips(snips, ch, opts);
     t = title(sprintf('Ch%d:%d', ch, size(snips.v,2)));
     yr = [yr; get(gca, 'ylim')];
   else
@@ -45,16 +65,18 @@ for ch = 1:64
   
   ax = [ax gca];
   if ch < 33
-    set(gca,'color', [0.5 0.9 0.9]);
+    set(gca, 'color', [.6 .5 .5]);
   else
-    set(gca,'color', [0.5 0.5 0.9]);
+    set(gca, 'color', [.5 .6 .5]);
   end
   fprintf('.');
 end
 fprintf('\n');
-if ~isempty(yr)
-  rng = [max(-120, min(yr(:,1))) min(120, max(yr(:,2)))]; 
- set(ax, 'YLim', rng);
+if ~opts.autoscale
+  if ~isempty(yr)
+    rng = [max(-120, min(yr(:,1))) min(120, max(yr(:,2)))]; 
+    set(ax, 'YLim', rng);
+  end
 end
 
 for n = 1:length(ax)
@@ -66,15 +88,22 @@ ylabel('uvolts');
 xlabel('usec');
 
 boxtitle(sprintf('exper=%s  src=%s', exper, src));
-%png(sprintf('%s-%s.png', exper, src));
+exportgraphics(gcf, sprintf('%s-%s.png', exper, src), ...
+               'resolution',300);
 
-function plotsnips(x, n)
+function plotsnips(x, n, opts)
 
-r = rdraw(200, 1:size(x.v,2));
-plot(x.t, x.v(:, r), 'Color', [0 0 0 .1]);
-hold on;
-set(plot(x.t, nanmean(x.v, 2), 'g-'), 'LineWidth', 1);
-hold off;
+y = nanmean(x.v, 2);
+if opts.meanonly
+  plot(x.t, y, 'k-');
+  eshade(x.t, y, nanstd(x.v, [], 2));
+else
+  r = rdraw(200, 1:size(x.v,2));
+  plot(x.t, x.v(:, r), 'Color', [0 0 0 .1], 'LineWidth', 0.1);
+  hold on;
+  plot(x.t, y, 'g-', 'LineWidth', 1);
+  hold off;
+end
 axis tight;
 hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
 hline(x.orig_thresh, 'LineStyle', ':', 'Color', 'r');
