@@ -123,7 +123,6 @@ for n = 1:length(o)
       subplot(2,3,6);
       hold on
       ix = find(isis < 2);
-      plot(x.t, nanmean(x.v(:,ix), 2));
       plot(x.t, nanmean(x.v(:,ix), 2), 'r.');
       eshade(x.t, nanmean(x.v(:,ix), 2), nanstd(x.v(:,ix), [], 2));
       yrange(-rng,rng);
