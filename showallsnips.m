@@ -32,7 +32,7 @@ for ch = 1:64
       f = sprintf('%s/sefiles/csc-se%d.mat', dirname(pf.src), ch);
       snips = rwsnips('load', [], f);
     otherwise
-      error('src must be: ''sx'', ''se'' or ''csc-se''');
+      error('src must be: ''all'', ''sx'', ''se'' or ''csc-se''');
   end
   if ~isempty(snips)
     plotsnips(snips, ch);
