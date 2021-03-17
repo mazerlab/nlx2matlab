@@ -11,7 +11,7 @@ for n = 1:length(expers)
   for ch = 1:64
     savefile = sprintf('%s/sefiles/csc-se%d.mat', dirname(pf.src), ch);
     if exist(savefile, 'file')
-      fprintf(''; exists: %s\n", savefile);
+      fprintf('; exists: %s\n', savefile);
       continue;
     end
     
