@@ -7,6 +7,8 @@ install:
 	cp *.m ${DEST}
 
 # compile binaries - this should RARELY need to be done
-binaries:
+binaries: FORCE
 	sh ./compile.sh
 	cp binaries/* ${DEST}
+
+FORCE:

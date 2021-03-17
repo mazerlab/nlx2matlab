@@ -25,4 +25,7 @@ switch dir
     catch
       snips = [];
     end
+  otherwise
+    error('rwsnips: unknown option -- %s', dir);
+  end
 end

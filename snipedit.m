@@ -6,8 +6,6 @@ classdef snipedit < handle
     ch
     figs
     nd
-    cscdata
-    cscn
     nclust
     buf
     pca
@@ -15,6 +13,7 @@ classdef snipedit < handle
     use_csc
     busy
     r
+    src
   end
 
   properties (Constant)
@@ -29,8 +28,6 @@ classdef snipedit < handle
       obj.pf = p2mLoad2(l{1});
       obj.exper = exper;
       obj.nd = [];
-      obj.cscdata = [];
-      obj.cscn = -1;
       
       obj.rwqual('load');
       
@@ -46,7 +43,6 @@ classdef snipedit < handle
       
       set(obj.figs{4}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-          'Position', [0, 1, 0.66, 0.03], ...
           'Toolbar' ,'none', 'Menubar', 'none');
 
       buts = [];
@@ -55,7 +51,7 @@ classdef snipedit < handle
 		 {'<', 'p'}, {'>', 'n'}, ...
 		 {'su', 's'}, {'mu', 'm'}, {'junk', 'j'}, {'unsorted', 'u'}, ...
 		 {'k++', 'equal'}, {'k--', 'hyphen'}, ...
-		 {'pca', 'f'}, {'quit', 'q'} };
+		 {'pca', 'f'}, {'quit', 'q'}, {'reset', 'r'} };
 
       for n = 1:length(labels)
 	buts(n) = uicontrol(obj.figs{4}, 'Style', 'pushbutton', ...
@@ -74,18 +70,21 @@ classdef snipedit < handle
 
       set(obj.figs{1}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-	  'Position', [0, .44, 0.4, 0.43], ...
           'Toolbar' ,'none', 'Menubar', 'none');
       
       set(obj.figs{3}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-          'Position', [0.41, 0.44, 0.25, 0.43], ...
           'Toolbar' ,'none', 'Menubar', 'none');
       
       set(obj.figs{2}, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
-          'Position', [0, 0.01, 0.66, 0.4], ...
           'Toolbar' ,'none', 'Menubar', 'none');
+      
+      set(obj.figs{4}, 'Position', [0 .88 0.40 0.03]);
+      set(obj.figs{1}, 'Position', [0 .43 .22 0.4]);
+      set(obj.figs{2}, 'Position', [0 .001 0.4 0.4]);
+      set(obj.figs{3}, 'Position', [0.23 .43 .15 0.4]);
+      
       
       obj.gochan(obj.ch, 1);
       
@@ -115,62 +114,67 @@ classdef snipedit < handle
 	forceraw = 0;
       end
       obj.msg(sprintf('loading ch%d', obj.ch));
-      
-      if obj.use_csc
-        if obj.cscn ~= obj.ch
-          obj.msg(sprintf('loading csc%d', obj.ch));
-          obj.cscdata = p2mLoadNLX(obj.pf, 'h', obj.ch);
-          obj.cscn = obj.ch;
-        end
-	if obj.thresh == 0
-	  %% if no threshold set, start at 4 sigma
-	  obj.thresh = 4 * std(obj.cscdata.csc.v);
-	end
-        obj.cscdata.snips = csc_findsnips(obj.cscdata.csc, obj.thresh, 0);
-        nd = obj.cscdata;
-        nd.csc = [];
-      else
-	if forceraw
-	  s = findrawsnips(obj);
-	  if ~isempty(s)
-	    obj.thresh = 0;
-	    obj.nclust = 1;
-	    s.q = 'u';
-	  end
-	else
-	  s = obj.rwsnips('load');
-	end
-	if ~isempty(s)
-	  fprintf('; loaded mat-cached se for ch#%d\n', obj.ch);
-	  nd.snips = s;
-	else
-          nd = p2mLoadNLX(obj.pf, 's', obj.ch);
-	end
-	if isempty(nd.snips)
-	  %% empty snip file
-	  r = 0;
-	  return;
-	end
-	%% artifact rejection - anything >+-200uv is artifact
-	nd.snips = subsnips(nd.snips, find(~any(abs(nd.snips.v) > 200)));
 
-	%% this allows setting threshold, but will adjust to make
-	%% sure some spikes are found (enough for pca)
-	t0  = find(nd.snips.t == 0);
-	while obj.thresh > 0
-	  %% bad - any volt over thresh:
-	  %% ix = find(any(nd.snips.v > obj.thresh));
-	  %% better - only consider voltage at time 0
-	  ix = find(nd.snips.v(t0,:) > obj.thresh);
-	  if length(ix) > 10
-	    nd.snips = subsnips(nd.snips, ix);
-	    nd.snips.thresh = obj.thresh;
-	    break;
-	  end
-	  %% go down in steps of 10uv (limit is 0) - if get to zero, then
-	  %% there were probably no real snips to start with.
-	  obj.thresh = max(0, obj.thresh - 1);
-        end
+      nd = [];
+
+      s = obj.rwsnips('load');
+      
+      if (isempty(s) || forceraw) && obj.use_csc
+	%% try to use csc-se.mat files
+	s = findrawsnips(obj)
+	if ~isempty(s)
+          nd = p2mLoadNLX(obj.pf, 'e', obj.ch);
+	  nd.snips = s;
+	  obj.nclust = 1;
+	  nd.snips.q = 'u';
+	else
+	  %% csc-se doesn't exist -- use se
+	  obj.use_csc = 0;
+	  waitfor(warndlg(sprintf('%s:%d no csc2snip; using SE data', ...
+				  obj.exper, obj.ch), 'Warning'));
+	end
+      end
+	  
+      if (isempty(s) || forceraw) && ~obj.use_csc
+	%% try to use se.mat files
+        nd = p2mLoadNLX(obj.pf, 's', obj.ch);
+	if ~isempty(nd.snips)
+	  obj.nclust = 1;
+	  ns.snips.q = 'u';
+	end
+      end
+      
+      if isempty(nd)
+	%% not raw -- use snipedit se.mat save files
+        nd = p2mLoadNLX(obj.pf, 's', obj.ch);
+	nd.snips = s;
+      end
+      
+      if isempty(nd.snips)
+	%% no data file
+	r = 0;
+	return;
+      end
+      
+      %% artifact rejection - anything >+-200uv is artifact
+      nd.snips = subsnips(nd.snips, find(~any(abs(nd.snips.v) > 200)));
+
+      %% this allows setting threshold, but will adjust to make
+      %% sure some spikes are found (enough for pca)
+      t0  = find(nd.snips.t == 0);
+      while obj.thresh > 0
+	%% bad - any volt over thresh:
+	%% ix = find(any(nd.snips.v > obj.thresh));
+	%% better - only consider voltage at time 0
+	ix = find(nd.snips.v(t0,:) > obj.thresh);
+	if length(ix) > 10
+	  nd.snips = subsnips(nd.snips, ix);
+	  nd.snips.thresh = obj.thresh;
+	  break;
+	end
+	%% go down in steps of 10uv (limit is 0) - if get to zero, then
+	%% there were probably no real snips to start with.
+	obj.thresh = max(0, obj.thresh - 1);
       end
       
       if isempty(nd.snips) || size(nd.snips.v, 2) < 10
@@ -180,7 +184,6 @@ classdef snipedit < handle
 	r = 1;
 	if isfield(nd.snips, 'q')
 	  %% loaded data from se-mat file, already has some info, use it.
-	  obj.thresh = nd.snips.thresh;
 	  obj.nclust = length(nd.snips.q);
 	else
 	  %% fresh look
@@ -256,7 +259,7 @@ classdef snipedit < handle
     end
 
     function snips = findrawsnips(obj)
-      savefile = sprintf('%s/sefiles/csc-se%d.mat', dirname(obj.pf.src), obj.ch)
+      savefile = sprintf('%s/sefiles/csc-se%d.mat', dirname(obj.pf.src), obj.ch);
       snips = rwsnips('load', [], savefile);
       if ~isempty(snips)
 	fprintf('; raw: found csc-se file\n');
@@ -308,7 +311,9 @@ classdef snipedit < handle
 	    obj.ch = 1;
 	    obj.rwqual('save');
 	  end
-      end
+	otherwise
+	  error('rwqual: unknown option -- %s', dir);
+        end
     end
 
     function r = arg(obj)
@@ -385,7 +390,7 @@ classdef snipedit < handle
 	case 'c'
 	  %% not yet: very, very slow
           obj.use_csc = ~obj.use_csc;
-          obj.loadchan();
+          obj.loadchan(0);
           obj.msg()
 	case 'uparrow'
           t = obj.thresh;
