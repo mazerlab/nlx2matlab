@@ -1,4 +1,4 @@
-function [snips, clusterplots] = ksnip(snips, nc)
+function [snips] = ksnip(snips, nc)
 %function ksnip(snips, nc)
 %
 % Simple k-means clustering of snips based on hardware-extract features
