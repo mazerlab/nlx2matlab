@@ -1,4 +1,4 @@
-function nlx_show(o, args)
+function nlx_show(o)
 %function nlx_show(x)
 %
 % generic display function for nlx data structures
@@ -22,11 +22,7 @@ for n = 1:length(o)
   switch x.type
     case 'csc'
       hold on
-      if exist('args', 'var')
-        plot(x.ts(args), x.v(args));
-      else
-        plot(x.ts, x.v);
-      end
+      plot(x.ts, x.v);
       axis tight
       xlabel('usec');
       ylabel('uv');
