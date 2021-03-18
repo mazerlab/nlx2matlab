@@ -6,7 +6,7 @@ opts.save = 0;
 
 if nargin == 0
   % no args -- try to find exper in current directoy and process in place
-  [s, exper] = unix('ls *.000x | head -1 | awk -F. ''{print $1}''');
+  [s, exper] = unix('ls *.000 | head -1 | awk -F. ''{print $1}''');
   exper = exper(1:end-1);
   showallsnips(exper, 'all', 'save');
   return;
