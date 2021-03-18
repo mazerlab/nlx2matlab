@@ -5,6 +5,8 @@ DEST=/auto/share/matlab-local/nlx2matlab
 install:
 	mkdir -p ${DEST}
 	cp *.m ${DEST}
+	cp csc2snips.sh /auto/share/pypeextra/csc2snips
+	cp showallsnips.sh /auto/share/pypeextra/showallsnips.sh
 
 # compile binaries - this should RARELY need to be done
 binaries: FORCE
