@@ -4,6 +4,14 @@ opts.autoscale = 0;                     % scale each plot to max (vs all same)
 opts.meanonly = 0;                      % no traces
 opts.save = 0;
 
+if nargin == 0
+  % no args -- try to find exper in current directoy and process in place
+  [s, exper] = unix('ls *.000x | head -1 | awk -F. ''{print $1}''');
+  exper = exper(1:end-1);
+  showallsnips(exper, 'all', 'save');
+  return;
+end
+
 if ~exist('src', 'var')
   src = 'se';
 end
@@ -64,10 +72,12 @@ for ch = 1:64
   set(t, 'FontWeight', 'normal');
   
   ax = [ax gca];
-  if ch < 33
-    set(gca, 'color', [.6 .5 .5]);
-  else
-    set(gca, 'color', [.5 .6 .5]);
+  if 0
+    if ch < 33
+      set(gca, 'color', [.6 .5 .5]);
+    else
+      set(gca, 'color', [.5 .6 .5]);
+    end
   end
   fprintf('.');
 end
@@ -88,8 +98,13 @@ ylabel('uvolts');
 xlabel('usec');
 
 boxtitle(sprintf('exper=%s  src=%s', exper, src));
-exportgraphics(gcf, sprintf('%s-%s.png', exper, src), ...
-               'resolution',300);
+
+if opts.save
+  png = sprintf('%s-%s.png', exper, src);
+  pdf = sprintf('%s-%s.pdf', exper, src);
+  exportgraphics(gcf, png, 'resolution',300);
+  unix(sprintf('convert -resize 75%% %s %s %s', png, pdf));
+end
 
 function plotsnips(x, n, opts)
 
