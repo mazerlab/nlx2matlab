@@ -145,9 +145,9 @@ for un = 1:length(units)
     plot(x.t, v(:, r), 'Color', calpha, 'LineWidth', 0.1);
     hold on;
     plot(x.t, y, 'g-', 'Color', c, 'LineWidth', 1);
-    hold off;
   end
 end
+hold off;
 axis tight;
 hline(x.thresh, 'LineStyle', '-', 'Color', 'r');
 hline(x.orig_thresh, 'LineStyle', ':', 'Color', 'r');

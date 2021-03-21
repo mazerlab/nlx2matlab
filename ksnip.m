@@ -41,7 +41,7 @@ for n = 1:np
   for k = 1:np
     if k <= n
       if k ~= n
-        subplot(np, 2*np, 1+(row*2*np)+col);
+        subplot(np, 3*np, 1+(row*3*np)+col);
         col = col + 1;
 
         scatter(p(n,:), p(k,:), 2, cmap(idx2,:), '.');
@@ -82,17 +82,38 @@ for n = 0:nc
   end
 end
 hold off
-xlabel('um');
-ylabel('uvolt');
-title('waveforms');
+axis tight;
+xlabel('us');
+ylabel('waveform (uv)');
 hline(0, 'LineStyle', '-');
 sig = std(snips.v(:));
 hline(-3*sig, 'LineStyle', ':');
 hline(3*sig, 'LineStyle', ':');
 legend(leg, 'location', 'bestoutside');
 
-% ISI histograms
+% waveform plots 2
 subplot(3, 3, 5);
+units =  unique(snips.cellnumbers);
+ls = [];
+for un = 1:length(units)
+  c = [cmap(un+1,:)];
+  calpha = [c 0.05];
+  ix = find(snips.cellnumbers == units(un));
+
+  v = snips.v(:,ix);
+  y = nanmean(v, 2);
+  r = rdraw(200, 1:size(v,2));
+  plot(snips.t, v(:, r), 'Color', calpha, 'LineWidth', 0.1);
+  hold on;
+  ls = [ls plot(snips.t, y, 'g-', 'Color', c, 'LineWidth', 1)];
+end
+hold off;
+axis tight;
+ylabel('waveform (uv)');
+legend(ls, leg{2:end}, 'location', 'bestoutside');
+
+% ISI histograms
+subplot(3, 3, 8);
 for n = 0:nc
   if n == 0
     ix = 1:length(idx);
@@ -113,7 +134,7 @@ end
 hold off
 xlabel('ms');
 ylabel('%');
-title('isi');
+ylabel('ISI (%)');
 legend(leg, 'location', 'bestoutside');
 
 % bycluster waveform plots
@@ -123,8 +144,7 @@ for n = 1:nc
   subplot(nc, 3, 3*n);
   ix = rdraw(200, find(idx == n));
   plot(snips.t, snips.v(:, ix), '-', 'Color', [cmap(n+1,:) 0.2]);
-  ylabel(n);
-  title('200 rand');
+  title([char('a'+n-1) ' 200 rnd']);
   a = [a; axis];
 end
 % set all to same yrange for comparison

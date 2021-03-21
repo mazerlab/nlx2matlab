@@ -452,11 +452,17 @@ classdef snipedit < handle
 	case ','
 	  obj.commit()
 	  obj.gochan([], 1);
+	case 'backspace'
+	  if length(obj.buf) > 0
+	    obj.buf = obj.buf(1:end-1);
+	    obj.msg();
+	  end
 	case 'period'
           obj.buf = [obj.buf '.'];
+	  obj.msg();
 	otherwise
           if length(key) == 1
-            if key >= '0' || key <= '9'
+            if key >= '0' && key <= '9'
               obj.buf = [obj.buf key];
             else
               obj.buf = '';
