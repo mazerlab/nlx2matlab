@@ -33,12 +33,15 @@ nlxdata.csc = [];
 nlxdata.snips = [];
 
 if any(what == 'h')
+  assert(~isnan(chan), 'no chan specified');
   nlxdata.csc = nlx_getRawCSC([dd sprintf('/CSC%d.ncs', chan)]);
   nlxdata.csc = nlx_CSChp(nlxdata.csc);
 elseif any(what == 'c')
+  assert(~isnan(chan), 'no chan specified');
   nlxdata.csc = nlx_getRawCSC([dd sprintf('/CSC%d.ncs', chan)]);
 end
 if any(what == 's')
+  assert(~isnan(chan), 'no chan specified');
   nlxdata.snips = nlx_getRawSE([dd sprintf('/SE%d.nse', chan)]);
 end
 

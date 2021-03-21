@@ -25,8 +25,7 @@ switch dir
     fprintf('; wrote snips to: %s (err=%fuv)\n', savefile, err);
   case {'read', 'load'}
     try
-      xx = load(savefile);
-      xx.xx.snips.scale
+      xx = load(savefile, '-mat');
       snips = xx.xx.snips;
       if isfield(snips, 'sxthresh')
 	snips.orig_thresh = snips.sxthresh;
@@ -39,7 +38,8 @@ switch dir
 	snips.v = double(snips.v) .* snips.scale;
         snips = rmfield(snips, 'scale');
       end
-    catch
+    catch ME
+      ME
       snips = [];
     end
   otherwise

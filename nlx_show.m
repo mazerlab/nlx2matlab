@@ -21,13 +21,16 @@ for n = 1:length(o)
 
   switch x.type
     case 'csc'
-      hold on
+      subplot(2,1,1);
       plot(x.ts, x.v);
       axis tight
       xlabel('usec');
       ylabel('uv');
       grid on;
-      hold off
+      
+      subplot(2,1,2);
+      n = min(length(x.v), 100000);
+      periodogram(x.v(1:n), [], [], x.fs, 'power');
       
       title(src);
     
@@ -93,7 +96,7 @@ for n = 1:length(o)
       %
       % Note: this is potentially misleading -- the NLX spike
       %   detection algorithm has a hard refractory period
-      %   build in: "-SpikeRetriggerTime 750"
+      %   built in: "-SpikeRetriggerTime 750"
       subplot(2,4,3);
       hold on
       isis = [NaN diff(x.ts/1000)];

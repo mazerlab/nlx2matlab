@@ -81,3 +81,11 @@
 %   - nlxdata is optional -- only event data are needed. If you have it, you can
 %     pass it in, otherwise will load automatically using p2mLoadNLX()
 %
+%mlab specific function
+%----------------------------------
+%
+% showallsnips(exper, src, varargin)
+%   - generate summary plots of snip waveforms for all chann3els
+%   - this can look at CSC, SE or 'committed' data from snipedit.m
+%
+

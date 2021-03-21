@@ -1,20 +1,37 @@
 function showallsnips(exper, src, varargin)
 
+% src can be:
+%  sx: raw data off SX box
+%  csc-se: data from CSC files processed by csc2snips
+%  se: commited data from snipedit
+
+
 opts.autoscale = 0;                     % scale each plot to max (vs all same)
 opts.meanonly = 0;                      % no traces
 opts.save = 0;
 
 if nargin == 0
-  % no args -- try to find exper in current directoy and process in place
+  % no args -- try to find exper in current directory and process in place
+  % this branch is intended to be used from command line as matlab batch
+  % script, so windows are closed as soon as saved.
   [s, exper] = unix('ls *.000 | head -1 | awk -F. ''{print $1}''');
   exper = exper(1:end-1);
-  showallsnips(exper, 'all', 'save');
+  showallsnips(exper, 'sx', 'autoscale', 'save');
+  showallsnips(exper, 'csc-se', 'autoscale', 'save');
+  showallsnips(exper, 'se', 'autoscale', 'save');
+  
+  %% note: if you get errors from convert, you need to change
+  %% add read|write access in /etc/ImageMagick-6/policy.xml:
+  %%   <policy domain="coder" rights="read|write" pattern="PDF" />
+  %%
+  unix(sprintf('convert %s-*.png %s.pdf', exper, exper));
   return;
 end
 
 if ~exist('src', 'var')
   src = 'se';
 end
+
 if strcmp(src, 'all')
   showallsnips(exper, 'sx', varargin{:});
   showallsnips(exper, 'csc-se', varargin{:});
@@ -23,7 +40,7 @@ if strcmp(src, 'all')
 end
 
 n = 1;
-while n < length(varargin)
+while n <= length(varargin)
   arg = varargin{n};
   switch arg
     case 'autoscale'
@@ -91,8 +108,8 @@ end
 
 for n = 1:length(ax)
   set(gcf, 'CurrentAxes', ax(n));
-  vline(0, 'LineStyle', '-', 'Color', 'b');
-  hline(0, 'LineStyle', '-', 'Color', 'b');
+  vline(0, 'LineStyle', '-', 'Color', 'm');
+  hline(0, 'LineStyle', '-', 'Color', 'm');
 end
 ylabel('uvolts');
 xlabel('usec');
@@ -103,21 +120,33 @@ if opts.save
   png = sprintf('%s-%s.png', exper, src);
   pdf = sprintf('%s-%s.pdf', exper, src);
   exportgraphics(gcf, png, 'resolution',300);
-  unix(sprintf('convert -resize 75%% %s %s %s', png, pdf));
+  %fprintf('--> convert -resize 75%% %s %s', png, pdf)
+  %unix(sprintf('convert -resize 75%% %s %s', png, pdf));
+  %fprintf('; wrote png and pdf\n');
 end
 
 function plotsnips(x, n, opts)
 
-y = nanmean(x.v, 2);
-if opts.meanonly
-  plot(x.t, y, 'k-');
-  eshade(x.t, y, nanstd(x.v, [], 2));
-else
-  r = rdraw(200, 1:size(x.v,2));
-  plot(x.t, x.v(:, r), 'Color', [0 0 0 .1], 'LineWidth', 0.1);
-  hold on;
-  plot(x.t, y, 'g-', 'LineWidth', 1);
-  hold off;
+units =  unique(x.cellnumbers);
+cmap = lines(length(units));
+
+for un = 1:length(units)
+  c = [cmap(un,:)];
+  calpha = [c 0.05];
+  ix = find(x.cellnumbers == units(un));
+
+  v = x.v(:,ix);
+  y = nanmean(v, 2);
+  if opts.meanonly
+    plot(x.t, y, 'k-');
+    eshade(x.t, y, nanstd(v, [], 2));
+  else
+    r = rdraw(200, 1:size(v,2));
+    plot(x.t, v(:, r), 'Color', calpha, 'LineWidth', 0.1);
+    hold on;
+    plot(x.t, y, 'g-', 'Color', c, 'LineWidth', 1);
+    hold off;
+  end
 end
 axis tight;
 hline(x.thresh, 'LineStyle', '-', 'Color', 'r');

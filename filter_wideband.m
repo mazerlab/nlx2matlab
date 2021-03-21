@@ -16,7 +16,16 @@ function [lfp, spk, wideband] = filter_wideband(ts, v, want, newfilts)
 %   - the lag with filter is basically N/2/fs, which is 12.8ms at 32000 for the hp filter
 %   - is it save to just shift??
 %
+%
+% [2021-03-21] added unit test -- called with no args will generate new filters
+%   - and run through noise of delta function to test.
 
+if nargin == 0
+  figure; filter_wideband_test('delta');
+  figure; filter_wideband_test('noise');
+  return
+end
+    
 persistent first_time n60 lp hp
 
 % If `use_filter`, then just use the faster filter() function and shift the
@@ -56,7 +65,7 @@ if isempty(n60)
   cfile = sprintf('%s/.pyperc/.notch-%d-%.0f.mat', ...
                   getenv('HOME'), notchfreq, fs);
   if ~force_make_filts && exist(cfile, 'file')
-    load(cfile);
+    load(cfile, '-mat');
     if isempty(first_time)
       fprintf('[restored notch filter (fs=%.0f)]\n', fs);
     end
@@ -73,7 +82,7 @@ if isempty(lp) && any(want=='l')
   cfile = sprintf('%s/.pyperc/.lfpcut-%d-%.0f.mat', ...
                   getenv('HOME'), lfpcut, fs);
   if ~force_make_filts && exist(cfile, 'file')
-    load(cfile);
+    load(cfile, '-mat');
     if isempty(first_time)
       fprintf('[restored lfpcut filter (fs=%.0f)]\n', fs);
     end
@@ -90,7 +99,7 @@ if isempty(hp) && any(want=='s')
   cfile = sprintf('%s/.pyperc/.hpcut-%d-%d-%.0f.mat', ...
                   getenv('HOME'), lfpcut, spikecut, fs);
   if ~force_make_filts && exist(cfile, 'file')
-    load(cfile);
+    load(cfile, '-mat');
     if isempty(first_time)
       fprintf('[restored spike filter (fs=%.0f)]\n', fs);
     end
@@ -159,3 +168,43 @@ if any(want == 'l')
   end
   lfp = d;
 end
+
+
+function filter_wideband_test(s)
+
+v = unifrnd(-1, 1, [1 100000]);
+if strcmp(s, 'delta')
+  v = v .* 0;
+  v(length(v)/2) = 1;
+end
+ts = (1:length(v))/32000;
+[lfp, spk, wideband] = filter_wideband(ts, v, 'lsw', 1);
+
+subplot(4,1,1);
+fs = 1/(wideband(1,2)-wideband(1,1));
+periodogram(wideband(2,:), [], [], fs, 'power');
+title('wideband');
+
+
+subplot(4,1,2);
+fs = 1/(spk(1,2)-spk(1,1));
+periodogram(spk(2,:), [], [], fs, 'power');
+title('spk');
+
+subplot(4,1,3);
+fs = 1/(lfp(1,2)-lfp(1,1));
+periodogram(lfp(2,:), [], [], fs, 'power');
+title('lfp');
+
+
+subplot(4,1,4);
+v = v .* 0; v(length(v)/2) = 1;
+[lfp, spk, wideband] = filter_wideband(ts, v, 'lsw');
+ix = 1:length(v);
+ts = ts - mean(ts);
+plot(ts(ix), v(ix), 'k-', ts(ix), spk(2,ix), 'r.-');
+rms(v-spk(2,:))
+xrange(-3e-3, 3e-3);
+
+
+

@@ -3,9 +3,9 @@
 # run csc2snip in matlab to process most recent datafiles and then quit
 #
 
-#matlab -nox -r csc2snip,quit
+#matlab -nox -r csc2snips,quit
 
 cat <<EOF | matlab -nox
-csc2snip;
+csc2snips;
 quit;
 EOF

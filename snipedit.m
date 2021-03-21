@@ -277,7 +277,7 @@ classdef snipedit < handle
       csvfile = sprintf('%s/sefiles/%s.qual.csv', dirname(obj.pf.src), obj.exper);
       mkdirhier(dirname(savefile));
       switch dir
-	case 'save'
+	case {'write', 'save'}
 	  xx = struct();
 	  xx.r = obj.r;
 	  xx.ch = obj.ch;
@@ -292,9 +292,9 @@ classdef snipedit < handle
 	  end
 	  fclose(fid);
 	  fprintf('; wrote to: %s\n', csvfile);
-	case 'load'
+	case {'read', 'load'}
 	  try
-	    xx = load(savefile);
+	    xx = load(savefile, '-mat');
 	    obj.r = xx.xx.r;
 	    obj.ch = xx.xx.ch;	% restore to last channel
 	  catch
