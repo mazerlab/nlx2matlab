@@ -1,5 +1,5 @@
-function snips = rwcsc(dir, csc, savefile)
-%function snips = rwcsc(dir, csc, savefile)
+function csc = rwcsc(dir, csc, savefile)
+%function csc = rwcsc(dir, csc, savefile)
 %
 % save/load csc struct to file
 %
@@ -35,8 +35,13 @@ switch dir
 	csc.v = double(csc.v) .* csc.scale;
         csc = rmfield(csc, 'scale');
       end
-    catch
-      csc = [];
+    catch ME
+      if strcmp(ME.identifier, 'MATLAB:load:couldNotReadFile')
+        warning('%s missing', savefile);
+        csc = [];
+      else
+        rethrow(ME);
+      end
     end
   otherwise
     error('rwcsc: unknown option -- %s', dir);

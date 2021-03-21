@@ -39,8 +39,12 @@ switch dir
         snips = rmfield(snips, 'scale');
       end
     catch ME
-      ME
-      snips = [];
+      if strcmp(ME.identifier, 'MATLAB:load:couldNotReadFile')
+        warning('%s missing', savefile);
+        snips = [];
+      else
+        rethrow(ME);
+      end
     end
   otherwise
     error('rwsnips: unknown option -- %s', dir);
