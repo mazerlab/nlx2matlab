@@ -1,6 +1,8 @@
 
 DEST=/auto/share/matlab-local/nlx2matlab
 
+all: tags install
+
 # install matlab and mex stuff for lab-wide use
 install:
 	mkdir -p ${DEST}
@@ -12,5 +14,9 @@ install:
 binaries: FORCE
 	sh ./compile.sh
 	cp binaries/* ${DEST}
+
+tags: FORCE
+	mtags *.m
+
 
 FORCE:
