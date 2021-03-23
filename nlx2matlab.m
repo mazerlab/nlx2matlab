@@ -88,4 +88,8 @@
 %   - generate summary plots of snip waveforms for all chann3els
 %   - this can look at CSC, SE or 'committed' data from snipedit.m
 %
-
+% pf = p2mnlxselect(pf, ch, cellnum)
+%   - pull spike times from snip data files for analysis
+%   - uses p2mSyncNLX to align spike times between NLX and pype data
+%     streams.
+%
