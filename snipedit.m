@@ -4,7 +4,7 @@ classdef snipedit < handle
     exper
     pf
     ch
-    figs
+    figs, menubar, snipplot, msgwin, ksnipplot
     nd
     nclust
     buf
@@ -29,22 +29,37 @@ classdef snipedit < handle
       obj.exper = exper;
       obj.nd = [];
       
-      obj.rwqual('load');
+      obj.rwqual('read');
       
       if exist('ch', 'var')
 	obj.ch = ch;
       end
 
       n = 100;
-      obj.figs{1} = figure(n); clf; n = n + 1; % snip plot
-      obj.figs{2} = figure(n); clf; n = n + 1; % kmeans clusters
-      obj.figs{3} = figure(n); clf; n = n + 1; % message window
-      obj.figs{4} = figure(n); clf; n = n + 1; % menubar
+      obj.menubar = figure(n); clf; n = n + 1;
+      obj.snipplot = figure(n); clf; n = n + 1;
+      obj.ksnipplot = figure(n); clf; n = n + 1;
+      obj.msgwin= figure(n); clf; n = n + 1;
+      obj.figs = {obj.menubar obj.snipplot obj.ksnipplot obj.msgwin};
       
-      set(obj.figs{4}, 'Units', 'normalized', ...
+      set(obj.menubar, 'Units', 'normalized', ...
           'NumberTitle', 'off', ...
           'Toolbar' ,'none', 'Menubar', 'none');
-
+      set(obj.snipplot, 'Units', 'normalized', ...
+          'NumberTitle', 'off', ...
+          'Toolbar' ,'none', 'Menubar', 'none');
+      set(obj.msgwin, 'Units', 'normalized', ...
+          'NumberTitle', 'off', ...
+          'Toolbar' ,'none', 'Menubar', 'none');
+      set(obj.ksnipplot, 'Units', 'normalized', ...
+          'NumberTitle', 'off', ...
+          'Toolbar' ,'none', 'Menubar', 'none');
+      
+      set(obj.menubar, 'Position', [0 .89 0.38 0.03]);  % menubar
+      set(obj.snipplot, 'Position', [0 .46 .22 0.4]);    % snip plot
+      set(obj.msgwin, 'Position', [0.22 .46 .16 0.4]); % messages
+      set(obj.ksnipplot, 'Position', [0 .04 0.38 0.4]);  % kmeans
+      
       buts = [];
       labels = { {'good >', 'comma'}, ...
 		 {'good', 'w'}, ...
@@ -54,7 +69,7 @@ classdef snipedit < handle
 		 {'pca', 'f'}, {'quit', 'q'}, {'reset', 'r'} };
 
       for n = 1:length(labels)
-	buts(n) = uicontrol(obj.figs{4}, 'Style', 'pushbutton', ...
+	buts(n) = uicontrol(obj.menubar, 'Style', 'pushbutton', ...
 			    'String', labels{n}{1});
 	if n < 2
 	  pn = get(buts(n), 'Position');
@@ -68,24 +83,6 @@ classdef snipedit < handle
 	set(buts(n), 'Callback', {@obj.dispatch, labels{n}{2}});
       end
 
-      set(obj.figs{1}, 'Units', 'normalized', ...
-          'NumberTitle', 'off', ...
-          'Toolbar' ,'none', 'Menubar', 'none');
-      
-      set(obj.figs{3}, 'Units', 'normalized', ...
-          'NumberTitle', 'off', ...
-          'Toolbar' ,'none', 'Menubar', 'none');
-      
-      set(obj.figs{2}, 'Units', 'normalized', ...
-          'NumberTitle', 'off', ...
-          'Toolbar' ,'none', 'Menubar', 'none');
-      
-      set(obj.figs{4}, 'Position', [0 .88 0.40 0.03]);
-      set(obj.figs{1}, 'Position', [0 .43 .22 0.4]);
-      set(obj.figs{2}, 'Position', [0 .001 0.4 0.4]);
-      set(obj.figs{3}, 'Position', [0.23 .43 .15 0.4]);
-      
-      
       obj.gochan(obj.ch, 1);
       
       obj.busy = 1;
@@ -117,11 +114,10 @@ classdef snipedit < handle
 
       nd = [];
 
-      s = obj.rwsnips('load');
-      
+      s = obj.rwsnips('read');
       if (isempty(s) || forceraw) && obj.use_csc
 	%% try to use csc-se.mat files
-	s = findrawsnips(obj)
+	s = findrawsnips(obj);
 	if ~isempty(s)
           nd = p2mLoadNLX(obj.pf, 'e', obj.ch);
 	  nd.snips = s;
@@ -140,7 +136,7 @@ classdef snipedit < handle
         nd = p2mLoadNLX(obj.pf, 's', obj.ch);
 	if ~isempty(nd.snips)
 	  obj.nclust = 1;
-	  ns.snips.q = 'u';
+	  nd.snips.q = 'u';
 	end
       end
       
@@ -155,6 +151,7 @@ classdef snipedit < handle
 	r = 0;
 	return;
       end
+      
       
       %% artifact rejection - anything >+-200uv is artifact
       nd.snips = subsnips(nd.snips, find(~any(abs(nd.snips.v) > 200)));
@@ -208,17 +205,17 @@ classdef snipedit < handle
     end
     
     function draw(obj)
-      set(0, 'CurrentFigure', obj.figs{1});
+      set(0, 'CurrentFigure', obj.snipplot);
       nlx_show(obj.nd.snips);
       
-      set(0, 'CurrentFigure', obj.figs{2});
+      set(0, 'CurrentFigure', obj.ksnipplot);
       obj.nd.snips = ksnip(obj.nd.snips, obj.nclust);
 
       obj.msg();
     end
     
     function msg(obj, working)
-      set(0, 'CurrentFigure', obj.figs{3});
+      set(0, 'CurrentFigure', obj.msgwin);
       if nargin > 1 && ~isempty(working)
         cla; textbox(working, 0); drawnow;
       else
@@ -260,7 +257,7 @@ classdef snipedit < handle
 
     function snips = findrawsnips(obj)
       savefile = sprintf('%s/sefiles/csc-se%d.mat', dirname(obj.pf.src), obj.ch);
-      snips = rwsnips('load', [], savefile);
+      snips = rwsnips('read', [], savefile);
       if ~isempty(snips)
 	fprintf('; raw: found csc-se file\n');
       elseif isempty(snips)
@@ -309,7 +306,7 @@ classdef snipedit < handle
 	      obj.r{n}.use_csc = 0;
 	    end
 	    obj.ch = 1;
-	    obj.rwqual('save');
+	    obj.rwqual('write');
 	  end
 	otherwise
 	  error('rwqual: unknown option -- %s', dir);
@@ -348,8 +345,8 @@ classdef snipedit < handle
       obj.r{obj.ch}.nclust = obj.nclust;
       obj.r{obj.ch}.pca = obj.pca;
       obj.r{obj.ch}.use_csc = obj.use_csc;
-      obj.rwqual('save');
-      obj.rwsnips('save');
+      obj.rwqual('write');
+      obj.rwsnips('write');
     end
 
     function closeall(obj)
@@ -387,8 +384,12 @@ classdef snipedit < handle
 	case 'r'
           obj.loadchan(1);
           obj.draw();
+	case 'C'
+          obj.use_csc = ~obj.use_csc;
+          obj.loadchan(1);
+          obj.draw();
+          obj.msg()
 	case 'c'
-	  %% not yet: very, very slow
           obj.use_csc = ~obj.use_csc;
           obj.loadchan(0);
           obj.msg()

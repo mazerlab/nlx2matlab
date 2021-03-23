@@ -21,7 +21,6 @@ dd = p2mFindNLX(pf);
 if ~exist('chan', 'var')
   chan = NaN;
 end
-nlxdata.chan = chan;
 
 if ~exist('what', 'var')
   what = '';

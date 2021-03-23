@@ -44,7 +44,7 @@ for n = 1:length(o)
       axis tight;
       rng = max(abs(ax(3:4)));
       yrange(-rng,rng);
-      ylabel('uvolts');
+      ylabel('uvolts (200 rnd)');
       xlabel('usec');
       vline(0, 'LineStyle', '-', 'Color', 'b');
       if isfield(x, 'thresh')
@@ -53,7 +53,6 @@ for n = 1:length(o)
       if ~isnan(x.orig_thresh)
         hline(x.orig_thresh, 'LineStyle', ':', 'Color', 'r');
       end
-      title('200 rand')
       grid on;
       hold off
 
