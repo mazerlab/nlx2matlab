@@ -93,3 +93,6 @@
 %   - uses p2mSyncNLX to align spike times between NLX and pype data
 %     streams.
 %
+% nlxscanner(exper, curonly)
+%   - look through databse for missing curated snip data
+%
