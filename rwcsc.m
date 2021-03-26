@@ -27,7 +27,6 @@ switch dir
       xx.csc.scale = 1 / 10;
       v = xx.csc.v;
       xx.csc.v = int16(round(xx.csc.v ./ xx.csc.scale));
-      keyboard
     end
     err = rms((double(xx.csc.v(:)) .* xx.csc.scale) - csc.v(:));
     save(savefile, 'xx');
