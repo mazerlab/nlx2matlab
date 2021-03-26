@@ -26,7 +26,7 @@ if nargin == 0
   return
 end
     
-persistent first_time n60 lp hp
+persistent first_time n60 lp hp;
 
 % If `use_filter`, then just use the faster filter() function and shift the
 % output back in time by the group delay to compensate for phase shifts.
@@ -78,6 +78,7 @@ if isempty(n60)
   end    
 end
 
+% original lowpass
 if isempty(lp) && any(want=='l')
   cfile = sprintf('%s/.pyperc/.lfpcut-%d-%.0f.mat', ...
                   getenv('HOME'), lfpcut, fs);
@@ -89,7 +90,8 @@ if isempty(lp) && any(want=='l')
   else
     fprintf('[making lfp filter (fs=%.0f)', fs);
     % Fpass Fstop Apass Astop
-    lp = design(fdesign.lowpass(lfpcut, 2*lfpcut, 0.1, 25, fs));
+    %lp = design(fdesign.lowpass(lfpcut, 2*lfpcut, 0.1, 25, fs));
+    lp = design(fdesign.lowpass(lfpcut, 2*lfpcut, 0.1, 200, fs));
     fprintf(']\n');
     save(cfile, 'lp');
   end
@@ -203,7 +205,6 @@ v = v .* 0; v(length(v)/2) = 1;
 ix = 1:length(v);
 ts = ts - mean(ts);
 plot(ts(ix), v(ix), 'k-', ts(ix), spk(2,ix), 'r.-');
-rms(v-spk(2,:))
 xrange(-3e-3, 3e-3);
 
 
