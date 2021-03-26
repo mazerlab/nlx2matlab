@@ -8,6 +8,7 @@ install:
 	mkdir -p ${DEST}
 	cp *.m ${DEST}
 	cp csc2snips.sh /auto/share/pypeextra/csc2snips
+	cp csc2lfp.sh /auto/share/pypeextra/csc2lfp
 	cp showallsnips.sh /auto/share/pypeextra/showallsnips
 
 # compile binaries - this should RARELY need to be done
