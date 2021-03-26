@@ -6,7 +6,7 @@ function csc = rwcsc(dir, csc, savefile)
 % this works, but resulting files are enormous..
 % would be better to do some sort of delta compression
 
-error('don''t use rwcsc -- this is NOT efficient');
+%error('don''t use rwcsc -- this is NOT efficient');
 
 SCALE=1;
 
@@ -19,10 +19,15 @@ switch dir
     %   bit signed ints to save space. This preserves better than
     %   0.01uv precision (std/rms) at ~4x space savings..
     % - compression is reversed on load by this function
-    %
+    % - for CSC/LFP files, there can be some clipping and artifacts
+    %   on original wavforms and compression can cause apparent rms
+    %   errors, but safe to ignore (I think, JM).
+    
     if SCALE
-      xx.csc.scale = 1 / 100;
+      xx.csc.scale = 1 / 10;
+      v = xx.csc.v;
       xx.csc.v = int16(round(xx.csc.v ./ xx.csc.scale));
+      keyboard
     end
     err = rms((double(xx.csc.v(:)) .* xx.csc.scale) - csc.v(:));
     save(savefile, 'xx');
